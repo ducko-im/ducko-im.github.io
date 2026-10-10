@@ -1,0 +1,14 @@
+---
+import AppIcon from '../AppIcon.astro';
+import PondBackdrop from '../PondBackdrop.astro';
+import { site } from '../../data/site';
+---
+
+<div data-appearance="light" data-og class="relative isolate flex h-[630px] w-[1200px] items-center gap-14 overflow-hidden px-28 text-white">
+  <PondBackdrop />
+  <AppIcon size={260} class="relative size-[260px] drop-shadow-[0_18px_36px_rgb(0_0_0/0.3)]" />
+  <div class="relative">
+    <p class="wordmark-shadow font-display text-[150px] leading-[0.9] font-black tracking-[-0.03em]">Ducko</p>
+    <p class="mt-6 max-w-[18ch] font-display text-[44px] leading-tight font-bold">{site.headline}</p>
+  </div>
+</div>

@@ -1,0 +1,83 @@
+---
+import { site } from '../../data/site';
+import { WINDOW_SIZES, initialState } from '../../hero/data';
+import { renderChatWindow } from '../../hero/view/chat';
+import { renderContactsWindow } from '../../hero/view/contacts';
+import { totalUnread } from '../../hero/view/shared';
+import { getLatestRelease } from '../../lib/release';
+import DockIcon from '../DockIcon.astro';
+import Footer from '../Footer.astro';
+import PondBackdrop from '../PondBackdrop.astro';
+
+const release = await getLatestRelease();
+const state = initialState();
+const unread = totalUnread(state);
+const { contacts, chat } = WINDOW_SIZES;
+const windowSizes = `--contacts-w:${contacts.width}px;--contacts-h:${contacts.height}px;--chat-w:${chat.width}px;--chat-h:${chat.height}px`;
+---
+
+<main class="hero relative isolate flex min-h-svh flex-col overflow-hidden text-white dark:text-sky-100" style={windowSizes} data-hero>
+  <PondBackdrop />
+
+  <div class="desk:px-8 desk:pt-12 desk:pb-6 px-5 pt-10 lg:grid lg:flex-1 lg:grid-cols-[minmax(300px,420px)_minmax(0,var(--hero-frame-w))] lg:items-center lg:justify-center lg:gap-x-10 xl:gap-x-16 xl:px-14">
+    <section class="rise-in relative">
+      <button type="button" data-hero-icon aria-label="Ducko" class="desk:[--dock-icon:96px] block rounded-[22%] [--dock-icon:64px]">
+        <DockIcon {unread} sizes="(width < 43.75rem) 64px, 96px" />
+      </button>
+      <h1 class="wordmark-shadow desk:mt-5 desk:text-[92px] mt-3.5 font-display text-6xl leading-[0.9] font-black tracking-[-0.03em]">Ducko</h1>
+      <p class="desk:mt-[18px] desk:text-[26px] mt-4 max-w-[18ch] font-display text-[22px] leading-tight font-bold tracking-[-0.01em] dark:text-amber-300">
+        {site.headline}
+      </p>
+      <p class="desk:text-base mt-3 max-w-[36ch] font-display text-[15px] leading-normal text-white/88 dark:text-sky-100/75">{site.subline}</p>
+      <div class="desk:mt-7 mt-[22px] flex flex-wrap gap-3">
+        <a
+          href={release.dmgUrl}
+          class="cta-primary max-desk:flex-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-[13px] text-[15px] font-bold whitespace-nowrap text-sky-950 transition-transform hover:-translate-y-px"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-[18px]">
+            <path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-2.99-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.89 1.15 9.14.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74s1.78.74 2.99.72c1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.67 1.37-.58.67-1.09 1.76-.96 2.79 1.02.08 2.06-.52 2.69-1.27z"></path>
+          </svg>
+          Download for Mac
+        </a>
+        <a
+          href={site.sponsorsUrl}
+          class="max-desk:flex-auto inline-flex items-center justify-center gap-2 rounded-xl bg-white/16 px-5 py-[13px] text-[15px] font-bold whitespace-nowrap text-white shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.45)] transition-transform hover:-translate-y-px dark:bg-white/6 dark:text-sky-100 dark:shadow-[inset_0_0_0_1px_rgb(224_242_254/0.25)]"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-[18px]">
+            <path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.5 3 4.5 6.7 4.5c2.1 0 3.5 1.1 4.3 2.4.8-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 4 4.3 7.3C19.5 16.4 12 21 12 21z"></path>
+          </svg>
+          Sponsor
+        </a>
+      </div>
+      <p class="mt-3.5 text-[13px] text-white/75 dark:text-sky-100/55">
+        Version {release.version} · {release.requirements} ·{' '}
+        <a href={release.releaseUrl} class="underline underline-offset-2 hover:text-white">
+          What's new
+        </a>
+      </p>
+    </section>
+
+    <section aria-label="Interactive Ducko demo" data-windows-frame class="relative mt-9 lg:mt-0 lg:h-full lg:min-h-0 lg:self-stretch">
+      <div class="hero-windows-outer desk:mx-auto lg:absolute lg:top-1/2 lg:left-1/2 lg:-translate-1/2">
+        <div class="hero-windows windows-reflection rise-in" data-front={state.frontWindow} data-windows style="animation-delay: 150ms">
+          <div class="hero-slot" data-slot="contacts">
+            <Fragment set:html={renderContactsWindow(state)} />
+            <button type="button" class="hero-slot-tap" aria-label="Show the Contacts window"></button>
+          </div>
+          <div class="hero-slot" data-slot="chat">
+            <Fragment set:html={renderChatWindow(state)} />
+            <button type="button" class="hero-slot-tap" aria-label="Show the chat window"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <Footer class="desk:py-4 relative px-5 py-6 text-white/75 dark:text-sky-100/55" />
+</main>
+
+<script>
+  import { startHero } from '../../hero/client';
+
+  startHero(document.querySelector<HTMLElement>('[data-hero]')!);
+</script>

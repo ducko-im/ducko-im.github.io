@@ -1,0 +1,25 @@
+---
+import { Font } from 'astro:assets';
+import BaseHead from '../components/BaseHead.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  noindex?: boolean;
+  lang?: string;
+  bodyClass?: string;
+}
+
+const { title, noindex, lang = 'en', bodyClass } = Astro.props;
+---
+
+<!doctype html>
+<html {lang}>
+  <head>
+    <BaseHead {title} {noindex} />
+    <Font cssVariable="--font-rounded" preload />
+  </head>
+  <body class={bodyClass}>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,25 @@
+---
+import AppIcon from './AppIcon.astro';
+
+// The app icon as it sits in the Dock, with its unread badge. The badge is sized from `--dock-icon`, so it keeps its
+// proportions at every icon size.
+interface Props {
+  unread: number;
+  size?: number;
+  sizes?: string;
+}
+
+const { unread, size, sizes } = Astro.props;
+---
+
+<span class="relative block size-(--dock-icon)" style={size ? `--dock-icon:${size}px` : undefined}>
+  <AppIcon size={size ?? 96} {sizes} class="size-full drop-shadow-[0_12px_24px_rgb(0_0_0/0.25)]" />
+  <span
+    data-dock-badge
+    aria-hidden="true"
+    class="absolute -top-[calc(var(--dock-icon)*0.04)] -right-[calc(var(--dock-icon)*0.04)] grid h-[calc(var(--dock-icon)*0.29)] min-w-[calc(var(--dock-icon)*0.29)] place-items-center rounded-full bg-[#ff3b30] px-[calc(var(--dock-icon)*0.06)] font-mac text-[calc(var(--dock-icon)*0.146)] leading-none font-semibold text-white shadow-[0_1px_3px_rgb(0_0_0/0.35)]"
+    hidden={unread === 0}
+  >
+    {unread}
+  </span>
+</span>

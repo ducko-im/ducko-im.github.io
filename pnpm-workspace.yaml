@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@types/node@26.6.5'
+  - prettier-plugin-astro@1.1.1
+  - prettier@3.9.10

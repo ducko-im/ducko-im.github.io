@@ -1,0 +1,28 @@
+---
+import IconGithub from './icons/IconGithub.astro';
+import { site } from '../data/site';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<footer class:list={['flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[13px]', className]}>
+  <span>
+    © {new Date().getFullYear()} {site.name}
+  </span>
+  <a href={site.repoUrl} class="inline-flex items-center gap-1.5 hover:underline">
+    <span class="size-3.5 fill-current">
+      <IconGithub />
+    </span>
+    GitHub
+  </a>
+  <a href="/impressum/" class="hover:underline">
+    Impressum
+  </a>
+  <a href={site.licenseUrl} class="hover:underline">
+    GPL-3.0
+  </a>
+</footer>

@@ -1,0 +1,30 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import AppIcon from '../components/AppIcon.astro';
+import Footer from '../components/Footer.astro';
+import PondBackdrop from '../components/PondBackdrop.astro';
+
+interface Props {
+  frontmatter: { title?: string; noindex?: boolean; lang?: string };
+}
+
+const { title, noindex, lang } = Astro.props.frontmatter;
+---
+
+<BaseLayout {title} {noindex} {lang} bodyClass="bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+  <header class="relative isolate overflow-hidden">
+    <PondBackdrop />
+    <div class="mx-auto max-w-3xl px-6 py-8">
+      <a href="/" class="inline-flex items-center gap-3 text-white dark:text-sky-100">
+        <AppIcon size={48} class="size-12 drop-shadow-[0_6px_12px_rgb(0_0_0/0.25)]" />
+        <span class="wordmark-shadow font-display text-4xl font-black tracking-[-0.02em]">Ducko</span>
+      </a>
+    </div>
+  </header>
+  <main class="mx-auto max-w-3xl px-6 py-10">
+    <div class="prose max-w-none prose-slate dark:prose-invert">
+      <slot />
+    </div>
+  </main>
+  <Footer class="pb-8 text-slate-500 dark:text-slate-400" />
+</BaseLayout>

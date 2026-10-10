@@ -1,0 +1,18 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+.pnpm-store/
+
+# environment variables
+.env*
+
+# macOS-specific files
+.DS_Store
+
+# local planning artifacts
+.turbo/

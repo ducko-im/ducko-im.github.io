@@ -1,0 +1,21 @@
+---
+// Plain PNGs in Display P3 with their profile embedded. Astro's image service converts to sRGB and drops the profile,
+// which clips the icon's wide-gamut colors and dulls it next to Tailwind's OKLCH colors.
+interface Props {
+  size: number;
+  sizes?: string;
+  class?: string;
+}
+
+const { size, sizes = `${size}px`, class: className } = Astro.props;
+---
+
+<img
+  src="/app-icon-256.png"
+  srcset="/app-icon-128.png 128w, /app-icon-256.png 256w, /app-icon-512.png 512w"
+  {sizes}
+  width={size}
+  height={size}
+  alt=""
+  class={className}
+/>

@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "states": [
+    {
+      "id": "contacts-key",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Contacts window as the key window, no row selected"
+    },
+    {
+      "id": "contacts-inactive",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Contacts window inactive, no row selected"
+    },
+    {
+      "id": "contacts-selected-key",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Lena's row selected in the key Contacts window"
+    },
+    {
+      "id": "contacts-selected-inactive",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Lena's row selected while the Contacts window is inactive"
+    },
+    {
+      "id": "contacts-group-collapsed",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Work group collapsed, its count still showing"
+    },
+    {
+      "id": "contacts-status-menu",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Own-status pull-down open"
+    },
+    {
+      "id": "contacts-status-hover",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Pointer over the own-status pull-down"
+    },
+    {
+      "id": "contacts-status-away",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Own status Away"
+    },
+    {
+      "id": "contacts-status-dnd",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Own status Do Not Disturb"
+    },
+    {
+      "id": "contacts-status-offline",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Own status Offline; every contact shows offline"
+    },
+    {
+      "id": "contacts-room-row",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Friends and Work collapsed; Pond Club room row with an unread badge"
+    },
+    {
+      "id": "chat-key",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Lena conversation in the key chat window"
+    },
+    {
+      "id": "chat-inactive",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Lena conversation while the chat window is inactive"
+    },
+    {
+      "id": "chat-typing",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Lena typing: ellipsis bubble in her tab"
+    },
+    {
+      "id": "chat-delivered",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Last outgoing message delivered (one check)"
+    },
+    {
+      "id": "chat-read",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Last outgoing message read (two checks)"
+    },
+    {
+      "id": "chat-input-filled",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Message field holding a draft"
+    },
+    {
+      "id": "chat-tabs",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "More tabs than fit, with the overflow chevron and an unread badge"
+    },
+    {
+      "id": "chat-tab-hover",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Pointer over Marco's tab: close button in its leading slot"
+    },
+    {
+      "id": "chat-bubble-hover",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Pointer over a bubble that is not last in its group: metadata showing"
+    },
+    {
+      "id": "chat-me",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "An outgoing /me action rendered in italics"
+    },
+    {
+      "id": "chat-edited",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Last outgoing message marked (edited)"
+    },
+    {
+      "id": "chat-room",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Pond Club room with nickname labels and participant avatars"
+    },
+    {
+      "id": "chat-empty",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "All tabs closed: No conversation open"
+    },
+    {
+      "id": "chat-context-menu",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Own-message context menu open on the last outgoing bubble"
+    },
+    {
+      "id": "chat-editing",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Editing message bar above the field with the original text loaded"
+    },
+    {
+      "id": "chat-offline",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Own status Offline: offline strip under the chat header"
+    },
+    {
+      "id": "dock-badge",
+      "window": "dock",
+      "appearances": ["light", "dark"],
+      "description": "Ducko's Dock icon at a 128 pt tile with an unread badge of 3"
+    }
+  ]
+}

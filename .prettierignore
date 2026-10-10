@@ -1,0 +1,5 @@
+dist
+.astro
+pnpm-lock.yaml
+.turbo
+reference/**/*.png

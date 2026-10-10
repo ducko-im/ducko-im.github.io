@@ -1,0 +1,22 @@
+---
+import AppIcon from '../components/AppIcon.astro';
+import PondBackdrop from '../components/PondBackdrop.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Not found" noindex>
+  <main class="relative isolate grid min-h-svh place-items-center overflow-hidden px-6 text-center text-white dark:text-sky-100">
+    <PondBackdrop />
+    <div>
+      <AppIcon size={120} class="wiggle-loop mx-auto size-30 drop-shadow-[0_12px_24px_rgb(0_0_0/0.25)]" />
+      <h1 class="wordmark-shadow mt-6 font-display text-5xl font-black tracking-[-0.02em]">This duck flew away.</h1>
+      <p class="mt-4 font-display text-lg text-white/85 dark:text-sky-100/75">The page you were looking for isn't here.</p>
+      <a
+        href="/"
+        class="cta-primary mt-8 inline-flex rounded-xl bg-amber-400 px-5 py-[13px] text-[15px] font-bold text-sky-950 transition-transform hover:-translate-y-px"
+      >
+        Back to the pond
+      </a>
+    </div>
+  </main>
+</BaseLayout>
