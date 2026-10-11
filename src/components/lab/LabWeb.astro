@@ -1,0 +1,35 @@
+---
+import type { HeroState } from '../../hero/types';
+import { renderChatWindow } from '../../hero/view/chat';
+import { renderContactsWindow } from '../../hero/view/contacts';
+import { totalUnread } from '../../hero/view/shared';
+import DockIcon from '../DockIcon.astro';
+import { type Appearance, type LabWindow, type Layout, box, sizeStyle } from './lab';
+
+// The web side of a comparison: the state's window at its captured size, or the Dock icon's artwork at its place in the captured tile.
+interface Props {
+  window: LabWindow;
+  appearance: Appearance;
+  layout: Layout;
+  built: { state: HeroState } | { error: string };
+}
+
+const { window, appearance, layout, built } = Astro.props;
+const RENDERERS = { contacts: renderContactsWindow, chat: renderChatWindow };
+---
+
+<div class="relative isolate shrink-0" style={sizeStyle(layout.frame)} data-appearance={appearance} data-web>
+  {'error' in built ? (
+    <p class="absolute inset-0 overflow-auto bg-red-50 p-3 text-xs text-red-800" data-error>
+      {built.error}
+    </p>
+  ) : window === 'dock' ? (
+    <div class="absolute" style={box(layout.icon)}>
+      <DockIcon size={layout.icon.width} unread={totalUnread(built.state)} />
+    </div>
+  ) : (
+    <div class="absolute" style={box(layout.window)}>
+      <Fragment set:html={RENDERERS[window](built.state)} />
+    </div>
+  )}
+</div>

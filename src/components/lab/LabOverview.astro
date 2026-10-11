@@ -1,0 +1,69 @@
+---
+import manifest from '../../../reference/states.json';
+import LabCapture from './LabCapture.astro';
+import LabWeb from './LabWeb.astro';
+import { type Appearance, type LabWindow, labCase, loadCaptures, sizeStyle } from './lab';
+
+// Every manifest state in each appearance, in difference mode at natural size: a card that lights up beyond its text
+// differs from the capture.
+const captures = loadCaptures();
+const cards = manifest.states.flatMap((s) =>
+  (s.appearances as Appearance[]).map((appearance) => {
+    const window = s.window as LabWindow;
+    return { id: s.id, window, appearance, ...labCase(captures, s.id, window, appearance) };
+  }),
+);
+---
+
+<main class="p-8 font-mac text-sm text-neutral-800" data-lab>
+  <h1 class="mb-2 text-xl font-semibold">Fidelity lab</h1>
+  <p class="mb-6 text-neutral-600">
+    Each card shows the web window from its fixture and the capture in reference/captures/ in difference mode. Open a card to compare it side by side or in
+    overlay.
+  </p>
+  <section class:list={['mb-8 rounded-lg p-4', captures.problems.length ? 'bg-red-50 text-red-900' : 'bg-green-50 text-green-900']} data-validation>
+    {captures.problems.length ? (
+      <>
+        <h2 class="mb-2 font-semibold">
+          {captures.problems.length} validation {captures.problems.length === 1 ? 'problem' : 'problems'}
+        </h2>
+        <ul class="list-disc space-y-1 pl-5">
+          {captures.problems.map((problem) => (
+            <li>{problem}</li>
+          ))}
+        </ul>
+      </>
+    ) : (
+      <h2 class="font-semibold">The capture set is complete and valid.</h2>
+    )}
+  </section>
+  <div class="flex flex-wrap items-start gap-6">
+    {cards.map(({ id, window, appearance, capture, layout, built }) => (
+      <figure class="flex flex-col gap-2">
+        <a href={`/lab/${id}/?appearance=${appearance}`} class="relative isolate block bg-neutral-200" style={sizeStyle(layout.frame)}>
+          <LabWeb {window} {appearance} {layout} {built} />
+          {capture && <LabCapture {capture} {layout} class="absolute top-0 left-0 mix-blend-difference" />}
+        </a>
+        <figcaption>
+          <a href={`/lab/${id}/?appearance=${appearance}`} class="text-sky-700 underline">
+            {id}
+          </a>
+          <span class="text-neutral-500">{appearance}</span>
+          {!capture && <span class="text-red-700">no capture</span>}
+        </figcaption>
+      </figure>
+    ))}
+  </div>
+  <p class="mt-8">
+    <a class="text-sky-700 underline" href="/lab/og/">
+      og
+    </a>
+    <span class="text-neutral-500">The 1200×630 Open Graph card, screenshotted into public/og.png</span>
+  </p>
+</main>
+
+<script>
+  import { settleChatWindows } from '../../hero/placement';
+
+  settleChatWindows(document);
+</script>

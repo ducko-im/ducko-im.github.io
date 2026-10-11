@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "clips": [
+    {
+      "id": "motion-group-collapse",
+      "from": "contacts-key",
+      "region": "contacts",
+      "steps": [{ "click": "groupHeader:Friends" }, { "wait": 1 }, { "click": "groupHeader:Friends" }, { "wait": 1 }],
+      "description": "Friends collapses and expands: the window's resize, the rows' slide and the chevron's rotation"
+    },
+    {
+      "id": "motion-status-menu",
+      "from": "contacts-key",
+      "region": "contacts",
+      "steps": [{ "click": "statusPicker" }, { "wait": 1 }, { "key": "Escape" }, { "wait": 1 }],
+      "description": "The status menu opens and closes"
+    },
+    {
+      "id": "motion-message-menu",
+      "from": "chat-key",
+      "region": "chat",
+      "steps": [{ "rightClick": "message:DFDEEC2D-F214-4EC0-B9DA-28C3A3C666E2" }, { "wait": 1 }, { "key": "Escape" }, { "wait": 1 }],
+      "description": "The message context menu opens over the chat window and closes"
+    },
+    {
+      "id": "motion-overflow-menu",
+      "from": "chat-tabs",
+      "region": "chat",
+      "steps": [{ "click": "tabOverflow" }, { "wait": 1 }, { "key": "Escape" }, { "wait": 1 }],
+      "description": "The tab bar's overflow menu opens and closes"
+    },
+    {
+      "id": "motion-tab-close",
+      "from": "chat-tab-hover",
+      "region": "chat",
+      "steps": [{ "click": "tabClose:marco" }, { "wait": 1 }],
+      "description": "Marco's tab closes and the remaining tabs take its space"
+    },
+    {
+      "id": "motion-bubble-hover",
+      "from": "chat-bubble-hover",
+      "region": "chat",
+      "steps": [{ "wait": 0.5 }, { "unhover": true }, { "wait": 0.5 }, { "hover": "message:10DD83D1-413E-4917-8385-2EABF1A48EE5" }, { "wait": 0.5 }],
+      "description": "The grouped bubble's metadata fades out and back in"
+    },
+    {
+      "id": "motion-window-activation",
+      "from": "chat-key",
+      "region": "windows",
+      "steps": [{ "click": "window:contacts" }, { "wait": 1 }, { "click": "window:chat" }, { "wait": 1 }],
+      "description": "Contacts becomes key, then the chat window again: title bar, traffic lights, selection and tabs switch between key and inactive"
+    },
+    {
+      "id": "motion-dock-bounce",
+      "from": "chat-key",
+      "region": "dock",
+      "steps": [{ "activateOtherApp": true }, { "wait": 1 }, { "incoming": "marco" }, { "wait": 3 }, { "incoming": "marco" }, { "wait": 3 }],
+      "description": "With another app active, a message arrives and another follows: the badge appearing, its count changing and the Dock bounce"
+    }
+  ]
+}

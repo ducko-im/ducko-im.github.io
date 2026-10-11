@@ -1,36 +1,37 @@
 import { ACTION_PREFIX } from '../commands';
-import { ME, PRESENCE_LABELS } from '../data';
+import { ME } from '../data';
 import { groupMessages, type TimelineRow } from '../grouping';
 import { partitionTabs, visibleTabCount } from '../tabs';
 import type { Conversation, HeroState, Message } from '../types';
 import { divider, titlebar, windowClass } from './chrome';
 import { escapeHtml } from './escape';
-import { formatDay, formatTime } from './format';
+import { formatDay, formatMinutesAgo, formatTime } from './format';
 import { icons } from './icons';
 import {
   activeConversation,
+  activityIndicator,
   avatar,
+  chatPresence,
   composerView,
   conversationName,
-  displayedPresence,
   menuClass,
   menuItemClass,
+  messageText,
   nicknameStyle,
   participantAvatar,
   participantCaption,
-  presenceDot,
-  unreadDescription,
 } from './shared';
 import { tw } from './tw';
 
-const toolButton = tw`grid place-items-center text-secondary-label`;
+const toolButton = tw`grid place-items-center text-label`;
+const secondaryToolButton = tw`grid place-items-center text-secondary-label`;
 
 function hintButton(anchor: string, label: string, content: string, classes = toolButton): string {
   return `<button type="button" data-action="hint" data-hint-anchor="${anchor}" aria-label="${label}" class="${classes}">${content}</button>`;
 }
 
 function lockMenu(): string {
-  return hintButton('lock', 'Encryption', `${icons.lockOpen(15)}${icons.chevronDown(7)}`, tw`flex items-center gap-0.5 text-secondary-label`);
+  return hintButton('lock', 'Encryption', `${icons.lockOpen(13)}${icons.chevronDown(10.5)}`, tw`mr-[5px] ml-0.5 flex items-center gap-[2.5px] text-label`);
 }
 
 export function renderChatHeader(state: HeroState): string {
@@ -38,25 +39,29 @@ export function renderChatHeader(state: HeroState): string {
   if (!conversation) return '';
   let identity: string;
   let tools: string;
-  if (conversation.kind === 'room') {
-    const room = state.rooms[conversation.id];
+  const room = conversation.kind === 'room' ? state.rooms[conversation.id] : null;
+  if (room) {
     const caption = participantCaption(state, room);
     identity = `<span class="${tw`flex min-w-0 flex-col gap-0.5`}">
       <span class="${tw`truncate font-bold`}">${escapeHtml(room.name)}</span>
       ${caption ? `<span class="${tw`text-mac-caption text-secondary-label`}">${caption}</span>` : ''}
     </span>`;
-    tools = hintButton('history', 'History', icons.clock(15)) + lockMenu() + hintButton('participants', 'Participants', icons.person2(16));
+    tools = hintButton('history', 'History', icons.clock(13)) + lockMenu() + hintButton('participants', 'Participants', icons.person2(13), secondaryToolButton);
   } else {
     const contact = state.contacts[conversation.id];
-    const presence = displayedPresence(state, contact.id);
-    const status = presence === 'offline' ? PRESENCE_LABELS.offline : (contact.status ?? PRESENCE_LABELS[presence]);
+    const { dot, status } = chatPresence(state, contact.id);
     identity = `${avatar(contact.avatar, contact.name, 32, state.duckMode)}
       <span class="${tw`flex min-w-0 flex-col gap-0.5`}">
         <span class="${tw`truncate font-bold`}">${escapeHtml(contact.name)}</span>
-        <span class="${tw`flex items-center gap-1`}">${presenceDot(presence)}<span class="${tw`truncate text-mac-caption text-secondary-label`}">${escapeHtml(status)}</span></span>
+        <span class="${tw`flex items-center gap-1`}">${dot}<span class="${tw`truncate text-mac-caption text-secondary-label`}">${escapeHtml(status)}</span></span>
       </span>`;
-    tools = hintButton('info', 'Contact Info', icons.infoCircle(15)) + hintButton('history', 'History', icons.clock(15)) + lockMenu();
+    tools = hintButton('info', 'Contact Info', icons.infoCircle(13)) + hintButton('history', 'History', icons.clock(13)) + lockMenu();
   }
+  const subject = room?.subject
+    ? `${divider}<div data-room-subject class="${tw`flex h-[23px] items-center gap-2 pr-[17px] pl-4 text-mac-callout`}">
+        <span class="${tw`min-w-0 flex-1 truncate`}">${escapeHtml(room.subject)}</span>${hintButton('subject', 'Change Subject', icons.pencil(8), secondaryToolButton)}
+      </div>`
+    : '';
   const strip =
     state.ownPresence === 'offline'
       ? `<div data-offline-strip class="${tw`bg-mac-orange/12 px-4 py-1 text-mac-caption text-secondary-label`}">You're offline — messages will send when you reconnect.</div>`
@@ -64,8 +69,8 @@ export function renderChatHeader(state: HeroState): string {
   return `<div class="${tw`flex items-center gap-2 px-4 py-2`}">
     ${identity}
     <span class="${tw`flex-1`}"></span>
-    <span class="${tw`flex items-center gap-2`}">${tools}</span>
-  </div>${strip}`;
+    <span class="${tw`flex items-center gap-2.5`}">${tools}</span>
+  </div>${subject}${strip}`;
 }
 
 function senderName(state: HeroState, conversation: Conversation, message: Message): string {
@@ -77,20 +82,28 @@ function deliveryMark(message: Message): string {
   if (message.direction !== 'out' || message.status === 'sent') return '';
   const read = message.status === 'read';
   const label = read ? 'Read' : 'Delivered';
-  return `<span class="${tw`flex`}" aria-label="${label}" title="${label}" data-delivery="${message.status}">${icons.checkmark(10)}${read ? `<span class="${tw`-ml-1 flex`}">${icons.checkmark(10)}</span>` : ''}</span>`;
+  return `<span class="${tw`mr-[1.5px] ml-px flex`}" aria-label="${label}" title="${label}" data-delivery="${message.status}">${icons.checkmark(9)}${read ? `<span class="${tw`-ml-0.5 flex`}">${icons.checkmark(9)}</span>` : ''}</span>`;
+}
+
+function editedLabel(state: HeroState, message: Message): string {
+  return message.editedSecondsAgo === undefined ? '(edited)' : `(edited ${formatMinutesAgo(message.editedSecondsAgo, state.format)})`;
 }
 
 function renderMetadata(state: HeroState, row: TimelineRow, forced: boolean): string {
   const { message } = row;
   const visibility = row.isLastInGroup || forced ? tw`opacity-100` : tw`opacity-0 group-hover/row:opacity-100`;
-  return `<span class="${tw`flex items-center gap-1 text-mac-caption text-secondary-label transition-opacity duration-150 motion-reduce:transition-none`} ${visibility}">
-    <span>${formatTime(message.time, state.format)}</span>${deliveryMark(message)}${message.edited ? '<span>(edited)</span>' : ''}
+  return `<span class="${tw`flex items-center gap-1 pb-px text-mac-caption text-secondary-label transition-opacity duration-150 ease-[ease-in-out] motion-reduce:transition-none`} ${visibility}">
+    <span>${formatTime(message.time, state.format)}</span>${deliveryMark(message)}${message.edited ? `<span>${editedLabel(state, message)}</span>` : ''}
   </span>`;
 }
 
-function renderContextMenu(message: Message): string {
+/** The open context menu, drawn in a layer over the chat window so it can reach past the window's edge, as Ducko's does. */
+export function renderContextMenu(state: HeroState): string {
+  const messageId = state.contextMenu?.messageId;
+  const message = messageId === undefined ? undefined : activeConversation(state)?.messages.find((m) => m.id === messageId);
+  if (!message) return '';
   const item = (label: string, attrs: string) => `<button type="button" role="menuitem" ${attrs} class="${menuItemClass}">${label}</button>`;
-  return `<div role="menu" aria-label="Message" class="${menuClass} ${tw`right-0 bottom-full mb-1 min-w-36`}">
+  return `<div role="menu" aria-label="Message" data-anchor="${message.id}" class="${menuClass} ${tw`pointer-events-auto`}">
     ${item('Copy', 'data-action="hint" data-hint-anchor="copy"')}
     ${item('Reply', 'data-action="hint" data-hint-anchor="reply"')}
     ${item('Edit', `data-action="start-edit" data-id="${message.id}"`)}
@@ -102,8 +115,8 @@ function renderBubble(state: HeroState, conversation: Conversation, row: Timelin
   const { message } = row;
   const outgoing = message.direction === 'out';
   const body = message.action
-    ? `<em>* ${escapeHtml(senderName(state, conversation, message))} ${escapeHtml(message.body.slice(ACTION_PREFIX.length))}</em>`
-    : escapeHtml(message.body);
+    ? `<em>* ${escapeHtml(senderName(state, conversation, message))} ${messageText(message.body.slice(ACTION_PREFIX.length))}</em>`
+    : messageText(message.body);
   const participant =
     conversation.kind === 'room' && !outgoing ? state.rooms[conversation.id].participants.find((p) => p.nickname === message.sender) : undefined;
   const nickname = participant
@@ -111,12 +124,10 @@ function renderBubble(state: HeroState, conversation: Conversation, row: Timelin
     : '';
   const forced = state.forcedHover?.kind === 'bubble' && state.forcedHover.id === message.id;
   const bubbleColors = outgoing ? tw`bg-bubble-out text-white` : tw`bg-bubble-in text-bubble-in-text`;
-  const menu = state.contextMenu?.messageId === message.id ? renderContextMenu(message) : '';
-  return `<div class="${tw`relative flex min-w-0 flex-col gap-1`} ${outgoing ? tw`items-end` : tw`items-start`}">
+  return `<div class="${tw`flex min-w-0 flex-col gap-1`} ${outgoing ? tw`items-end` : tw`items-start`}">
     ${nickname}
-    <div class="${tw`rounded-xl px-3 py-2 break-words whitespace-pre-wrap`} ${bubbleColors}" ${outgoing ? 'data-own-bubble' : ''} data-id="${message.id}">${body}</div>
+    <div class="${tw`rounded-xl px-3 py-2 leading-4 break-words whitespace-pre-wrap`} ${bubbleColors}" ${outgoing ? 'data-own-bubble' : ''} data-id="${message.id}">${body}</div>
     ${renderMetadata(state, row, forced)}
-    ${menu}
   </div>`;
 }
 
@@ -134,7 +145,7 @@ function renderRow(state: HeroState, conversation: Conversation, row: TimelineRo
   const outgoing = row.message.direction === 'out';
   const spacer = `<span class="${tw`min-w-[60px] flex-1`}"></span>`;
   const day = row.startsDay
-    ? `<div class="${tw`py-2 text-center text-mac-caption text-secondary-label`}">${formatDay(row.message.time, state.format)}</div>`
+    ? `<div class="${tw`pt-2 pb-[9px] text-center text-mac-caption text-secondary-label`}">${formatDay(row.message.time, state.format)}</div>`
     : '';
   const content = renderBubble(state, conversation, row);
   const inner = outgoing ? spacer + content : renderSenderAvatar(state, conversation, row) + content + spacer;
@@ -147,40 +158,32 @@ export function renderTimeline(state: HeroState): string {
   const rows = groupMessages(conversation.messages, state.format.timeZone)
     .map((row) => renderRow(state, conversation, row))
     .join('');
-  return `<div class="${tw`mt-auto pb-2`}">${rows}</div>`;
+  return `<div class="${tw`mt-auto pb-[9px]`}">${rows}</div>`;
 }
 
 export function renderComposer(state: HeroState): string {
   const { draft, editing, canSend } = composerView(state);
-  return `<div data-edit-bar class="${tw`flex items-center gap-2 bg-window px-3 py-1.5`}" ${editing ? '' : 'hidden'}>
-    <span class="${tw`text-secondary-label`}">${icons.pencil(14)}</span>
+  return `<div data-edit-bar class="${tw`flex items-center gap-2.5 bg-edit-bar pt-1.5 pr-[13px] pb-[7px] pl-[13px]`}" ${editing ? '' : 'hidden'}>
+    <span class="${tw`relative top-px text-secondary-label`}">${icons.pencil(11)}</span>
     <span class="${tw`flex min-w-0 flex-col gap-0.5`}">
-      <span class="${tw`text-mac-caption font-bold`}">Editing message</span>
+      <span class="${tw`text-mac-caption font-semibold`}">Editing message</span>
       <span data-edit-preview class="${tw`truncate text-mac-caption text-secondary-label`}">${escapeHtml(editing?.body ?? '')}</span>
     </span>
     <span class="${tw`flex-1`}"></span>
-    <button type="button" data-action="cancel-edit" aria-label="Cancel editing" class="${tw`text-secondary-label`}">${icons.xmarkCircleFill(14)}</button>
+    <button type="button" data-action="cancel-edit" aria-label="Cancel editing" class="${tw`text-secondary-label`}">${icons.xmarkCircleFill(13)}</button>
   </div>
-  <div class="${tw`flex items-end gap-2 p-3`}">
-    ${hintButton('paperclip', 'Attach file', icons.paperclip(18), tw`grid h-[18px] place-items-center text-label`)}
+  <div class="${tw`flex items-end gap-2 py-[13px] pr-[13.5px] pl-3`}">
+    ${hintButton('paperclip', 'Attach file', icons.paperclip(17), tw`relative -top-px grid h-[18px] place-items-center text-label`)}
     <label for="hero-message" class="${tw`sr-only`}">Message</label>
-    <textarea id="hero-message" data-composer-input rows="1" placeholder="Message" class="${tw`max-h-[5lh] min-h-[1lh] flex-1 resize-none [scrollbar-width:none] overflow-y-auto bg-transparent leading-[18px] outline-none placeholder:text-tertiary-label`}">${escapeHtml(draft)}</textarea>
-    <button type="button" data-action="send" aria-label="Send" class="${tw`grid h-[18px] place-items-center text-label disabled:text-tertiary-label`}" ${canSend ? '' : 'disabled'}>${icons.arrowUpCircleFill(20)}</button>
+    <textarea id="hero-message" data-composer-input rows="1" placeholder="Message" class="${tw`relative top-0.5 max-h-[5lh] min-h-[1lh] flex-1 resize-none [scrollbar-width:none] overflow-y-auto bg-transparent leading-[18px] outline-none placeholder:text-secondary-label`}">${escapeHtml(draft)}</textarea>
+    <button type="button" data-action="send" aria-label="Send" class="${tw`grid h-[18px] place-items-center text-label disabled:opacity-50`}" ${canSend ? '' : 'disabled'}>${icons.arrowUpCircleFill(17)}</button>
   </div>`;
 }
 
 function tabLeadingSlot(state: HeroState, conversation: Conversation, forcedHover: boolean): string {
   const close = `<button type="button" data-action="close-tab" data-id="${conversation.id}" aria-label="Close tab" class="${tw`absolute inset-0 z-10 place-items-center text-secondary-label`} ${forcedHover ? tw`grid` : tw`hidden group-hover/tab:grid`}">${icons.xmarkCircleFill(13)}</button>`;
-  let indicator: string;
-  if (conversation.unread > 0) {
-    indicator = `<span class="${tw`grid size-4 place-items-center rounded-full bg-mac-red text-[9px] leading-none font-semibold text-white`}" role="img" aria-label="${unreadDescription(conversation.unread)}" data-unread>${conversation.unread > 9 ? '9+' : conversation.unread}</span>`;
-  } else if (conversation.kind === 'chat' && conversation.typing) {
-    indicator = `<span class="${tw`text-secondary-label`}" data-typing>${icons.ellipsisBubbleFill(14)}</span>`;
-  } else if (conversation.kind === 'room') {
-    indicator = `<span class="${tw`text-secondary-label`}">${icons.number(12)}</span>`;
-  } else {
-    indicator = presenceDot(displayedPresence(state, conversation.id));
-  }
+  const idle = conversation.kind === 'room' ? `<span class="${tw`text-secondary-label`}">${icons.number(12)}</span>` : chatPresence(state, conversation.id).dot;
+  const indicator = activityIndicator(conversation, idle);
   return `<span class="${tw`relative grid size-4 shrink-0 place-items-center`}">${close}<span class="${tw`grid place-items-center`} ${forcedHover ? tw`invisible` : tw`group-hover/tab:invisible`}">${indicator}</span></span>`;
 }
 
@@ -210,7 +213,7 @@ export function renderTabs(state: HeroState): string {
   const overflowControl =
     overflow.length > 0
       ? `<span class="${tw`relative`}">
-          <button type="button" data-action="overflow-menu" aria-haspopup="menu" aria-expanded="${state.openMenu === 'overflow'}" aria-label="More tabs" class="${tw`grid size-[22px] place-items-center text-secondary-label`}">${icons.chevronDown(11)}</button>
+          <button type="button" data-action="overflow-menu" aria-haspopup="menu" aria-expanded="${state.openMenu === 'overflow'}" aria-label="More tabs" class="${tw`grid size-[22px] place-items-center text-label`}">${icons.chevronDown(16)}</button>
           ${state.openMenu === 'overflow' ? renderOverflowMenu(state, overflow) : ''}
         </span>`
       : '';
@@ -218,10 +221,10 @@ export function renderTabs(state: HeroState): string {
 }
 
 function renderEmptyState(): string {
-  return `<div class="${tw`flex flex-1 flex-col items-center justify-center gap-3`}">
-    <span class="${tw`text-secondary-label`}">${icons.bubbles(30)}</span>
+  return `<div class="${tw`flex flex-1 flex-col items-center justify-center gap-3 pt-0.5`}">
+    <span class="${tw`mb-0.5 text-secondary-label`}">${icons.bubbles(31)}</span>
     <span class="${tw`text-secondary-label`}">No conversation open</span>
-    <button type="button" data-action="hint" data-hint-anchor="new-chat" class="${tw`rounded-md bg-hover-fill px-3 py-0.5 shadow-[0_0.5px_1px_rgb(0_0_0/0.2)] dark:bg-white/20`}">New Chat</button>
+    <button type="button" data-action="hint" data-hint-anchor="new-chat" class="${tw`h-6 rounded-lg bg-black/7 px-[15px] dark:bg-white/7`}">New Chat</button>
   </div>`;
 }
 
@@ -239,5 +242,6 @@ export function renderChatWindow(state: HeroState): string {
     <div data-view="empty" class="${tw`flex min-h-0 flex-1 flex-col`}" ${hasConversation ? 'hidden' : ''}>${renderEmptyState()}</div>
     ${divider}
     <div data-region="tabs" class="${tw`flex h-[34px] shrink-0 items-center px-3`}">${renderTabs(state)}</div>
-  </div>`;
+  </div>
+  <div data-region="context-menu" class="${tw`pointer-events-none absolute inset-0`}">${renderContextMenu(state)}</div>`;
 }

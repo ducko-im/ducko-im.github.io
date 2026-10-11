@@ -1,11 +1,33 @@
 # Fidelity references
 
-The hero's windows recreate Ducko's Contacts and chat windows. This folder holds what they are compared against.
+The hero recreates Ducko's Contacts and chat windows and its Dock icon. This folder holds what they are compared against.
 
 - `states.json` is the manifest of window and Dock icon states the site can render. Each state has an `id`, the `window` it shows (`contacts`, `chat` or `dock`), the `appearances` to capture, and a `description`. The ducko repo's `Skills/demo-screenshots` reference mode reads it and captures each state from the real app.
-- `captures/` holds those captures as `<id>.<appearance>.png`, plus the `capture.json` the capture run writes (its `displayScale` sets the scale the lab shows them at).
-- `src/hero/fixtures.ts` builds the hero state for every manifest id. The manifest and the fixtures change together; `src/hero/fixtures.test.ts` fails when they drift apart.
+- `captures/` holds one capture run, imported untouched and kept local (gitignored): `<id>.<appearance>.png` per state, `<id>.<appearance>.menu.png` for open menus, the run's `capture.json`, and the `content.json` it was captured with. Prettier ignores the folder, so `content.json` keeps the SHA-256 that `capture.json` records.
+- `motion.json` lists the motion clips to record from the real app: the state each clip starts from, the region to record, and the steps to drive.
+- `src/hero/fixtures.ts` builds every state from `captures/content.json`. That file is a copy: the ducko repo's `Skills/demo-screenshots/content.json` owns what each state shows, and a change there needs a recapture.
 
-## Comparing
+Run `pnpm dev` and open `/lab/`. It validates the capture set and shows every state in both appearances in difference mode. `/lab/<id>/` compares one state side by side, in overlay or in difference. The lab exists only in development; `pnpm build` emits no lab pages and no captures.
 
-Run `pnpm dev` and open `/lab/`. Each `/lab/<id>/` page renders the window from its fixture at 1× next to the capture. It switches between side-by-side, overlay (with an opacity slider) and difference views, in light or dark (`?appearance=dark`, `?mode=overlay|difference`). A state without a capture shows "No reference captured yet". The lab exists only in development; `pnpm build` emits no lab pages and no captures.
+The procedure for a rerun (capture, compare, import, validate, tune, sign off) is the project skill `.claude/skills/fidelity-pass/SKILL.md`.
+
+## Known deviations
+
+These are the accepted differences from the real app. Any other difference the lab shows is a regression.
+
+- **Dock backdrop and running indicator.** The Dock crop holds the Dock's glass and the dot under the icon, which have no web counterpart.
+- **Menu fill past the window edge.** Where the context menu reaches past its window, its captured glass shows the capture VM's wallpaper.
+- **Text cursor.** A capture of a key chat window with a focused field shows a held caret. The lab draws none.
+- **Traffic-light gloss.** A two-stop gradient and an edge stand in for macOS's radial gloss and halo.
+- **Menu glass tint.** Over colored content, such as a blue bubble, the app's glass tints more strongly than the web's translucent, blurred fill.
+- **Text rasterization.** AppKit draws text slightly heavier than browsers, and pixel snapping leaves offsets of up to 1 pt.
+- **Room nickname colors.** Ducko draws every room nickname gray, a bug in its HSLuv conversion that the captures and the lab's fixtures show. The live hero keeps the colors Ducko intends. Once the app is fixed and recaptured, recompute `OCCUPANT_COLORS` in `src/hero/fixtures.ts` and drop this entry.
+- **Roster while offline.** Ducko empties the contact list while your own status is Offline. The hero keeps it gray, since its intro builds up from a gray roster.
+
+## Not yet compared
+
+No motion is compared yet, because the ducko repo's reference mode can't record clips. `motion.json` lists the clips to record.
+
+The motion Ducko's source defines is ported as is: the Contacts window's resize with its row slide (AppKit's 0.2 s per 150 pt, ease-in-out), the group chevron (0.2 s) and the metadata fade (0.15 s). The clips will check it.
+
+macOS draws the rest, and Ducko's source says nothing about it: menus opening and closing, the Dock bounce and badge, window activation and tab close. The clips are what that motion will be tuned against.

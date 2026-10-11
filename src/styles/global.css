@@ -32,6 +32,7 @@
   --font-display: var(--font-rounded);
 
   --color-window: var(--mac-window);
+  --color-edit-bar: var(--mac-edit-bar);
   --color-label: var(--mac-label);
   --color-secondary-label: var(--mac-secondary-label);
   --color-tertiary-label: var(--mac-tertiary-label);
@@ -49,14 +50,19 @@
   --color-presence-offline: var(--mac-gray);
   --color-mac-orange: var(--mac-orange);
   --color-mac-red: var(--mac-red);
-  --color-light-close: var(--mac-light-close);
-  --color-light-minimize: var(--mac-light-minimize);
-  --color-light-zoom: var(--mac-light-zoom);
-  --color-light-inactive: var(--mac-light-inactive);
+  --color-titlebar: var(--mac-titlebar);
+  --color-title: var(--mac-title);
+  --color-title-inactive: var(--mac-title-inactive);
   --color-menu: var(--mac-menu);
+  --color-menu-separator: var(--mac-menu-separator);
 
   --shadow-window: var(--mac-window-shadow);
   --shadow-menu: var(--mac-menu-shadow);
+  --shadow-titlebar: 0 0.5px 0 var(--mac-titlebar-separator);
+  --shadow-light-close: var(--mac-light-close-edge);
+  --shadow-light-minimize: var(--mac-light-minimize-edge);
+  --shadow-light-zoom: var(--mac-light-zoom-edge);
+  --shadow-light-inactive: var(--mac-light-inactive-edge);
 }
 
 @layer base {
@@ -66,28 +72,39 @@
     --mac-bubble-in: #e5e5ea;
     --mac-bubble-in-text: #000000;
     --mac-bubble-out: #5b9bd5;
-    --mac-separator: #e0e0e0;
+    --mac-separator: #e6e6e6;
 
     /* macOS system colors */
     --mac-window: #ffffff;
+    --mac-edit-bar: #ffffff;
     --mac-label: rgb(0 0 0 / 0.85);
     --mac-secondary-label: rgb(0 0 0 / 0.5);
     --mac-tertiary-label: rgb(0 0 0 / 0.26);
-    --mac-hover-fill: rgb(0 0 0 / 0.1);
+    --mac-hover-fill: rgb(0 0 0 / 0.085);
     --mac-accent: #007aff;
     --mac-selection: #0064e1;
     --mac-selection-inactive: #dcdcdc;
     --mac-green: #34c759;
     --mac-yellow: #ffcc00;
-    --mac-red: #ff3b30;
+    --mac-red: #ff383c;
     --mac-gray: #8e8e93;
-    --mac-orange: #ff9500;
-    --mac-blue: #007aff;
-    --mac-light-close: #ff5f57;
-    --mac-light-minimize: #febc2e;
-    --mac-light-zoom: #28c840;
-    --mac-light-inactive: #d9d9d9;
-    --mac-menu: rgb(246 246 246 / 0.96);
+    --mac-orange: #ff8d28;
+    --mac-blue: #0088ff;
+    --mac-titlebar: #ffffff;
+    --mac-titlebar-separator: #e5e5e5;
+    --mac-title: #595959;
+    --mac-title-inactive: #b8b8b8;
+    /* Traffic lights: a fill gradient, and an edge drawn as a box-shadow */
+    --mac-light-close: linear-gradient(#f86b62, #f68f88);
+    --mac-light-close-edge: inset 0 0 0 0.5px #d2463f;
+    --mac-light-minimize: linear-gradient(#fcbb2a, #fecf40);
+    --mac-light-minimize-edge: inset 0 0 0 0.5px #d7991c;
+    --mac-light-zoom: linear-gradient(#5ac822, #98de78);
+    --mac-light-zoom-edge: inset 0 0 0 0.5px #3fa323;
+    --mac-light-inactive: linear-gradient(#f5f6f7, #eff0f1);
+    --mac-light-inactive-edge: inset 0 0 0 0.5px #aaabb0;
+    --mac-menu: rgb(255 255 255 / 0.7);
+    --mac-menu-separator: rgb(0 0 0 / 0.13);
     --mac-window-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.22), 0 30px 80px -10px rgb(0 0 0 / 0.45), 0 10px 24px -8px rgb(0 0 0 / 0.25);
     --mac-menu-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.18), 0 10px 30px rgb(0 0 0 / 0.22);
 
@@ -95,24 +112,37 @@
       --mac-bubble-in: #38383a;
       --mac-bubble-in-text: #ffffff;
       --mac-bubble-out: #4a8bc2;
-      --mac-separator: #3a3a3a;
+      --mac-separator: #393939;
 
-      --mac-window: #1e1e1e;
+      --mac-window: #232323;
+      --mac-edit-bar: #1e1e1e;
       --mac-label: rgb(255 255 255 / 0.85);
       --mac-secondary-label: rgb(255 255 255 / 0.55);
       --mac-tertiary-label: rgb(255 255 255 / 0.25);
-      --mac-hover-fill: rgb(255 255 255 / 0.1);
+      --mac-hover-fill: rgb(255 255 255 / 0.085);
       --mac-accent: #0a84ff;
       --mac-selection: #0058d0;
       --mac-selection-inactive: #464646;
       --mac-green: #30d158;
-      --mac-yellow: #ffd60a;
-      --mac-red: #ff453a;
+      --mac-yellow: #ffd600;
+      --mac-red: #ff4245;
       --mac-gray: #98989d;
-      --mac-orange: #ff9f0a;
-      --mac-blue: #0a84ff;
-      --mac-light-inactive: #4d4d4d;
-      --mac-menu: rgb(40 40 40 / 0.96);
+      --mac-orange: #ff9230;
+      --mac-blue: #0091ff;
+      --mac-titlebar: #2b2b2b;
+      --mac-titlebar-separator: #323232;
+      --mac-title: #a6a6a6;
+      --mac-title-inactive: #6c6c6c;
+      --mac-light-close: linear-gradient(#f65246, #ef6763);
+      --mac-light-close-edge: inset 0 0.5px 0 #f6c4ba, inset 0 -0.5px 0 #f6c2ba;
+      --mac-light-minimize: linear-gradient(#fbb401, #fecf30);
+      --mac-light-minimize-edge: inset 0 0.5px 0 #f6f56c, inset 0 -0.5px 0 #f6f57c;
+      --mac-light-zoom: linear-gradient(#00be00, #4ec436);
+      --mac-light-zoom-edge: inset 0 0.5px 0 #aff58f, inset 0 -0.5px 0 #a7f68d;
+      --mac-light-inactive: linear-gradient(#535353, #4c4c4c);
+      --mac-light-inactive-edge: inset 0 0.5px 0 #b4b4b4, inset 0 -0.5px 0 #adadad;
+      --mac-menu: rgb(96 96 96 / 0.49);
+      --mac-menu-separator: rgb(255 255 255 / 0.18);
       --mac-window-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.18), 0 30px 90px -10px rgb(0 0 0 / 0.8), 0 0 60px -10px rgb(0 166 244 / 0.25);
       --mac-menu-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.15), 0 10px 30px rgb(0 0 0 / 0.5);
     }
@@ -250,11 +280,18 @@
   .hero-slot {
     position: absolute;
 
+    /* --contacts-h reserves the whole roster; the client fits the window to its expanded groups, as Ducko does. */
     &[data-slot='contacts'] {
       top: 0;
       left: 0;
       width: var(--contacts-w);
-      height: var(--contacts-h);
+      height: var(--contacts-window-h, var(--contacts-h));
+
+      @variant desk {
+        @media (prefers-reduced-motion: no-preference) {
+          transition: height var(--contacts-resize-time, 0s) ease-in-out;
+        }
+      }
     }
 
     &[data-slot='chat'] {
@@ -349,10 +386,6 @@
     animation: fade-in 0.25s ease-out both;
   }
 
-  .sign-on {
-    animation: sign-on 1.2s ease-out;
-  }
-
   .wiggle {
     animation: wiggle 0.5s ease-in-out;
   }
@@ -381,12 +414,6 @@
   from {
     opacity: 0;
     transform: translateY(4px);
-  }
-}
-
-@keyframes sign-on {
-  from {
-    background-color: rgb(255 204 0 / 0.35);
   }
 }
 

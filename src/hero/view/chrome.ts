@@ -14,20 +14,28 @@ export function windowTitle(state: HeroState, window: HeroWindow): string {
   return conversationName(state, id);
 }
 
+const LIGHTS = {
+  close: tw`bg-(image:--mac-light-close) shadow-light-close`,
+  minimize: tw`bg-(image:--mac-light-minimize) shadow-light-minimize`,
+  zoom: tw`bg-(image:--mac-light-zoom) shadow-light-zoom`,
+  inactive: tw`bg-(image:--mac-light-inactive) shadow-light-inactive`,
+};
+
 export function renderTitlebar(state: HeroState, window: HeroWindow): string {
   const key = isKey(state, window);
-  const lights = key ? [tw`bg-light-close`, tw`bg-light-minimize`, tw`bg-light-zoom`] : [tw`bg-light-inactive`, tw`bg-light-inactive`, tw`bg-light-inactive`];
+  // The user can't resize Ducko's Contacts window, so its zoom button is drawn inactive even while the window is key.
+  const lights = key ? [LIGHTS.close, LIGHTS.minimize, window === 'chat' ? LIGHTS.zoom : LIGHTS.inactive] : [LIGHTS.inactive, LIGHTS.inactive, LIGHTS.inactive];
   const buttons = lights
     .map(
-      (color, index) =>
-        `<button type="button" data-action="hint" data-hint-anchor="lights-${window}" aria-label="${['Close', 'Minimize', 'Zoom'][index]} window" class="${tw`size-3 rounded-full shadow-[inset_0_0_0_0.5px_rgb(0_0_0/0.18)]`} ${color}"></button>`,
+      (classes, index) =>
+        `<button type="button" data-action="hint" data-hint-anchor="lights-${window}" aria-label="${['Close', 'Minimize', 'Zoom'][index]} window" class="${tw`size-3.5 rounded-full`} ${classes}"></button>`,
     )
     .join('');
-  return `<div class="${tw`absolute top-[10px] left-[13px] flex gap-2`}">${buttons}</div><span class="${key ? tw`text-label` : tw`text-tertiary-label`} ${tw`truncate px-20 font-bold`}">${escapeHtml(windowTitle(state, window))}</span>`;
+  return `<div class="${tw`absolute top-[9px] left-[9px] flex gap-[9px]`}">${buttons}</div><span class="${key ? tw`text-title` : tw`text-title-inactive`} ${tw`truncate pr-4 pl-[84px] font-bold`}">${escapeHtml(windowTitle(state, window))}</span>`;
 }
 
 export function titlebar(state: HeroState, window: HeroWindow): string {
-  return `<div data-region="${window}-titlebar" class="${tw`relative flex h-8 shrink-0 items-center justify-center`}">${renderTitlebar(state, window)}</div>`;
+  return `<div data-region="${window}-titlebar" class="${tw`relative flex h-8 shrink-0 items-center bg-titlebar shadow-titlebar`}">${renderTitlebar(state, window)}</div>`;
 }
 
 export const windowClass = tw`relative flex size-full cursor-default flex-col overflow-hidden rounded-window bg-window font-mac text-mac-body leading-[1.25] text-label shadow-window select-none`;

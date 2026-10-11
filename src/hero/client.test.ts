@@ -53,7 +53,7 @@ function mount({ reducedMotion = false } = {}) {
 /** Gives an element the layout happy-dom does not compute. */
 function layout(element: HTMLElement, rect: { left: number; top: number; width: number; height: number }, offsetWidth = rect.width) {
   element.getBoundingClientRect = () => DOMRect.fromRect({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
-  Object.defineProperty(element, 'offsetWidth', { value: offsetWidth });
+  Object.defineProperty(element, 'offsetWidth', { value: offsetWidth, configurable: true });
 }
 
 function type(input: HTMLTextAreaElement, text: string) {
@@ -116,6 +116,26 @@ describe('clicks', () => {
     expect(hint.style.top).toBe('26px');
   });
 
+  // The chat window is drawn at half size: 250 px on screen for its 500 px layout.
+  it('opens the context menu at its bubble’s centre in the window’s unscaled coordinates and keeps it there', () => {
+    const { $, resize } = mount({ reducedMotion: true });
+    const bubble = $('[data-own-bubble]');
+    layout($('[data-region="context-menu"]'), { left: 100, top: 50, width: 250, height: 225 }, 500);
+    layout(bubble, { left: 300, top: 150, width: 40, height: 20 });
+    bubble.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    const menu = $('[role="menu"][aria-label="Message"]');
+    expect(menu.style.left).toBe('440px');
+    expect(menu.style.top).toBe('214.5px');
+
+    const timeline = $('[data-region="timeline"]');
+    layout(bubble, { left: 300, top: 100, width: 40, height: 20 });
+    timeline.dispatchEvent(new Event('scroll'));
+    expect(menu.style.top).toBe('114.5px');
+    layout(bubble, { left: 280, top: 100, width: 40, height: 20 });
+    resize(timeline);
+    expect(menu.style.left).toBe('400px');
+  });
+
   it('closes an open menu on a click outside the hero', () => {
     const { $ } = mount({ reducedMotion: true });
     $('[data-action="status-menu"]').click();
@@ -132,6 +152,145 @@ describe('clicks', () => {
     Object.defineProperty(tabs, 'clientWidth', { value: 290 });
     resize(tabs);
     expect(tabs.querySelector('[data-action="overflow-menu"]')).not.toBeNull();
+  });
+});
+
+describe('the Contacts window', () => {
+  const work = '[data-action="toggle-group"][data-id="work"]';
+  const resizeTime = (slot: HTMLElement) => parseFloat(slot.style.getPropertyValue('--contacts-resize-time'));
+
+  /**
+   * Stands in for two things happy-dom lacks. One is Chromium's `getAnimations()`, which returns only running
+   * animations and skips detached elements. The other is a height for the Work rows: 200 px at rest, `reached` while
+   * they slide, none once detached.
+   */
+  function motion() {
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    const getAnimations = Element.prototype.getAnimations;
+    vi.spyOn(Element.prototype, 'getAnimations').mockImplementation(function (this: Element) {
+      return this.isConnected ? getAnimations.call(this).filter((animation) => animation.playState === 'running') : [];
+    });
+    const heights = { reached: 200 };
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      if (!this.isConnected || !this.matches('[data-group-rows]')) return 0;
+      return this.getAnimations().length > 0 ? heights.reached : 200;
+    });
+    const animations = (selector: string) =>
+      animate.mock.results.flatMap(({ value }, index) => {
+        const target = animate.mock.contexts[index] as HTMLElement;
+        if (!target.matches(selector)) return [];
+        const [keyframes, options] = animate.mock.calls[index] as [Keyframe[], KeyframeAnimationOptions];
+        // happy-dom leaves a cancelled animation's `finished` rejection unhandled; browsers mark it handled.
+        (value as Animation).finished.catch(() => {});
+        return [{ target, animation: value as Animation, keyframes, duration: options.duration as number, easing: options.easing }];
+      });
+    return { heights, slides: () => animations('[data-group-rows]'), turns: () => animations('[data-chevron]') };
+  }
+
+  it('fits its height to the expanded groups and slides the collapsing rows up into their header', () => {
+    const { slides, turns } = motion();
+    const { $ } = mount();
+    const slot = $('[data-slot="contacts"]');
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('555px');
+    $(work).click();
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('355px');
+    expect($(work).getAttribute('aria-expanded')).toBe('false');
+
+    // 0.2 s per 150 pt, for the window's transition and the slide alike.
+    const [slide] = slides();
+    expect(resizeTime(slot)).toBeCloseTo(0.2667, 4);
+    expect(slide.duration).toBeCloseTo(266.67, 2);
+    expect(slide.easing).toBe('ease-in-out');
+    expect(slide.keyframes).toEqual([{ height: '200px' }, { height: '0px' }]);
+    expect(slide.target.inert).toBe(true);
+    expect(slide.target.previousElementSibling).toBe($(work));
+    expect(slide.target.style.overflow).toBe('hidden');
+    // Tailwind's rotate-90 sets `rotate`, so the chevron's turn animates that property: a `transform` would add to it.
+    expect(turns()[0].keyframes).toEqual([{ rotate: '90deg' }, { rotate: '0deg' }]);
+
+    slide.animation.finish();
+    expect($('[data-group-rows="work"]')).toBeNull();
+  });
+
+  it('slides an expanding group’s rows down out of their header, then leaves them as rendered', () => {
+    const { heights, slides, turns } = motion();
+    const { $ } = mount();
+    $(work).click();
+    slides()[0].animation.finish();
+    $(work).click();
+    const slide = slides()[1];
+    expect(slide.keyframes).toEqual([{ height: '0px' }, { height: '200px' }]);
+    expect(slide.target).toBe($('[data-group-rows="work"]'));
+    expect(slide.target.style.overflow).toBe('hidden');
+    expect(turns()[1].keyframes).toEqual([{ rotate: '0deg' }, { rotate: '90deg' }]);
+
+    slide.animation.finish();
+    expect(slide.target.isConnected).toBe(true);
+    expect(slide.target.getAttribute('style')).toBeNull();
+
+    // At rest again, the rows collapse from their full height, whatever the finished slide passed through.
+    heights.reached = 126;
+    $(work).click();
+    expect(slides()[2].keyframes).toEqual([{ height: '200px' }, { height: '0px' }]);
+  });
+
+  // The repaint detaches the sliding rows before the next slide starts, so the old slide has to be cancelled through
+  // its animation. Left running, it would finish first and strip the styles of the rows sliding again.
+  it('continues an interrupted slide from the height it reached, at the pace of the distance left', () => {
+    const { heights, slides } = motion();
+    const { $ } = mount();
+    const slot = $('[data-slot="contacts"]');
+    $(work).click();
+    slides()[0].animation.finish();
+
+    $(work).click();
+    const expanding = slides()[1];
+    heights.reached = 126;
+    $(work).click();
+    const collapsing = slides()[2];
+    expect(expanding.animation.playState).toBe('idle');
+    expect(collapsing.target).toBe(expanding.target);
+    expect(collapsing.keyframes).toEqual([{ height: '126px' }, { height: '0px' }]);
+    expect(collapsing.duration).toBeCloseTo(168, 2);
+    expect(collapsing.target.style.overflow).toBe('hidden');
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('355px');
+
+    heights.reached = 80;
+    $(work).click();
+    const [, , , again] = slides();
+    expect(collapsing.animation.playState).toBe('idle');
+    expect(again.keyframes).toEqual([{ height: '80px' }, { height: '200px' }]);
+    expect(again.duration).toBeCloseTo(160, 2);
+    again.animation.finish();
+    expect(again.target.getAttribute('style')).toBeNull();
+    expect(document.querySelectorAll('[data-group-rows="work"]')).toHaveLength(1);
+  });
+
+  it('starts from the rows in the list when another repaint dropped the sliding ones', () => {
+    const { heights, slides } = motion();
+    const { $ } = mount();
+    $(work).click();
+    slides()[0].animation.finish();
+    $(work).click();
+    heights.reached = 126;
+    $('[data-action="select-row"][data-id="jonas"]').click();
+    expect(slides()[1].target.isConnected).toBe(false);
+
+    $(work).click();
+    expect(slides()[2].keyframes).toEqual([{ height: '200px' }, { height: '0px' }]);
+  });
+
+  it('resizes without sliding under reduced motion', () => {
+    const { slides, turns } = motion();
+    const { $ } = mount({ reducedMotion: true });
+    const slot = $('[data-slot="contacts"]');
+    $(work).click();
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('355px');
+    expect($('[data-group-rows="work"]')).toBeNull();
+    $(work).click();
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('555px');
+    expect($('[data-group-rows="work"]').getAttribute('style')).toBeNull();
+    expect([...slides(), ...turns()]).toEqual([]);
   });
 });
 
@@ -152,6 +311,16 @@ describe('the composer', () => {
     Object.defineProperty(timeline, 'scrollHeight', { value: 900 });
     timeline.scrollTop = 0;
     resize(timeline);
+    expect(timeline.scrollTop).toBe(900);
+  });
+
+  it('keeps the newest message in view when one is sent', () => {
+    const { $, input } = mount({ reducedMotion: true });
+    const timeline = $('[data-region="timeline"]');
+    Object.defineProperty(timeline, 'scrollHeight', { value: 900 });
+    timeline.scrollTop = 0;
+    type(input, 'hi');
+    press(input, 'Enter');
     expect(timeline.scrollTop).toBe(900);
   });
 

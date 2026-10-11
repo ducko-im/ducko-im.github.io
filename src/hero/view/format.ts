@@ -17,6 +17,10 @@ export function formatTime(time: number, { locale, timeZone }: HeroState['format
   return formatter(locale, { timeStyle: 'short', timeZone }).format(time);
 }
 
+export function formatMinutesAgo(secondsAgo: number, { locale }: HeroState['format']): string {
+  return new Intl.RelativeTimeFormat(locale).format(-Math.round(secondsAgo / 60), 'minute');
+}
+
 export function formatDay(time: number, { locale, timeZone }: HeroState['format']): string {
   return formatter(locale, { dateStyle: 'medium', timeZone }).format(time);
 }

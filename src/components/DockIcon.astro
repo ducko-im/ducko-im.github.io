@@ -1,7 +1,8 @@
 ---
 import AppIcon from './AppIcon.astro';
 
-// The app icon as it sits in the Dock, with its unread badge. The badge is sized from `--dock-icon`, so it keeps its
+// The app icon as it sits in the Dock, with its unread badge. `--dock-icon` is the icon artwork's size, not the Dock
+// tile's: macOS draws the artwork at 824/1024 of the tile. The badge is sized from it, so it keeps the captured
 // proportions at every icon size.
 interface Props {
   unread: number;
@@ -17,7 +18,7 @@ const { unread, size, sizes } = Astro.props;
   <span
     data-dock-badge
     aria-hidden="true"
-    class="absolute -top-[calc(var(--dock-icon)*0.04)] -right-[calc(var(--dock-icon)*0.04)] grid h-[calc(var(--dock-icon)*0.29)] min-w-[calc(var(--dock-icon)*0.29)] place-items-center rounded-full bg-[#ff3b30] px-[calc(var(--dock-icon)*0.06)] font-mac text-[calc(var(--dock-icon)*0.146)] leading-none font-semibold text-white shadow-[0_1px_3px_rgb(0_0_0/0.35)]"
+    class="absolute -top-[calc(var(--dock-icon)*0.125)] -right-[calc(var(--dock-icon)*0.115)] grid h-[calc(var(--dock-icon)*0.485)] min-w-[calc(var(--dock-icon)*0.485)] place-items-center rounded-full bg-[#f03c32] px-[calc(var(--dock-icon)*0.1)] font-mac text-[calc(var(--dock-icon)*0.25)] leading-none text-white"
     hidden={unread === 0}
   >
     {unread}

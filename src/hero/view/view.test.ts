@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { FIXTURE_NOW, initialState } from '../data';
+import { FIXTURE_NOW, WINDOW_SIZES, initialState } from '../data';
 import type { HeroState, MessageStatus } from '../types';
 import { renderChatHeader, renderChatWindow, renderComposer, renderTabs, renderTimeline } from './chat';
-import { renderContactsList } from './contacts';
+import { contactsWindowHeight, renderContactsList, renderContactsWindow } from './contacts';
 import { escapeHtml } from './escape';
 import { formatTime } from './format';
+import { iconMasks } from './icons';
+import { messageText } from './shared';
 
 function state(edit: (state: HeroState) => void = () => {}): HeroState {
   const s = structuredClone(initialState(FIXTURE_NOW));
@@ -44,10 +46,48 @@ describe('renderContactsList', () => {
     expect(doc.querySelector('[data-id="pond-club"] [role="img"]')!.getAttribute('aria-label')).toBe('1 unread message');
   });
 
+  it('shows unread and typing in a contact row’s leading slot', () => {
+    const doc = dom(
+      renderContactsList(
+        state((s) => {
+          s.conversations.marco.unread = 2;
+          s.conversations.jonas.typing = true;
+        }),
+      ),
+    );
+    expect(doc.querySelector('[data-id="marco"] [data-unread]')?.textContent).toBe('2');
+    expect(doc.querySelector('[data-id="jonas"] [data-typing]')).not.toBeNull();
+  });
+
   it('shows every contact offline while the visitor is offline', () => {
     const doc = dom(renderContactsList(state((s) => (s.ownPresence = 'offline'))));
     const presences = new Set([...doc.querySelectorAll('[data-action="select-row"] [data-presence]')].map((dot) => dot.getAttribute('data-presence')));
     expect([...presences]).toEqual(['offline']);
+  });
+});
+
+describe('renderContactsWindow', () => {
+  it('draws the open status menu outside the window, which would clip it once fitted to a few rows', () => {
+    const doc = dom(renderContactsWindow(state((s) => (s.openMenu = 'status'))));
+    const menu = doc.querySelector('[role="menu"][aria-label="Status"]')!;
+    expect(doc.querySelector('[data-window] [role="menu"]')).toBeNull();
+    // The layer covers the window, so it must let clicks through to it while its menu takes them.
+    expect(menu.parentElement!.classList.contains('pointer-events-none')).toBe(true);
+    expect(menu.classList.contains('pointer-events-auto')).toBe(true);
+  });
+});
+
+describe('contactsWindowHeight', () => {
+  it('fits the whole roster to the reserved height and drops a collapsed group’s rows', () => {
+    expect(contactsWindowHeight(state())).toBe(WINDOW_SIZES.contacts.height);
+    expect(contactsWindowHeight(state((s) => (s.groups[1].collapsed = true)))).toBe(WINDOW_SIZES.contacts.height - 5 * 40);
+  });
+});
+
+describe('messageText', () => {
+  it('enlarges each emoji as one unit, skin tones and joined sequences included', () => {
+    const spans = [...dom(messageText('hi 👋🏽 from 👩‍💻 with ☕️')).querySelectorAll('span')];
+    expect(spans.map((span) => span.textContent)).toEqual(['👋🏽', '👩‍💻', '☕️']);
   });
 });
 
@@ -158,6 +198,29 @@ describe('renderChatHeader', () => {
     expect(room((s) => (s.ownPresence = 'offline'))).not.toContain('4 participants');
   });
 
+  it('shows a contact’s own presence in the header and the tab while online', () => {
+    const away = state((s) => Object.assign(s.contacts.lena, { presence: 'away', status: null }));
+    const header = dom(renderChatHeader(away));
+    expect(header.querySelector('[data-presence="away"]')).not.toBeNull();
+    expect(header.body.textContent).toContain('Away');
+    expect(dom(renderChatHeader(state())).body.textContent).toContain('Feeding the ducks');
+    expect(dom(renderTabs(away)).querySelector('[data-tab="lena"] [data-presence="away"]')).not.toBeNull();
+  });
+
+  it('draws the unknown-presence ring in the header and the tab while offline', () => {
+    const offline = state((s) => (s.ownPresence = 'offline'));
+    const header = dom(renderChatHeader(offline));
+    expect(header.querySelector('[data-presence="unknown"]')).not.toBeNull();
+    expect(header.body.textContent).toContain('Presence unknown');
+    expect(dom(renderTabs(offline)).querySelector('[data-tab="lena"] [data-presence="unknown"]')).not.toBeNull();
+    expect(dom(renderChatHeader(state())).querySelector('[data-presence="unknown"]')).toBeNull();
+  });
+
+  it('shows a room’s subject under its header', () => {
+    const room = state((s) => (s.activeConversationId = 'pond-club'));
+    expect(dom(renderChatHeader(room)).querySelector('[data-room-subject]')!.textContent).toContain(room.rooms['pond-club'].subject);
+  });
+
   it('adds the offline strip while offline', () => {
     expect(renderChatHeader(state((s) => (s.ownPresence = 'offline')))).toContain("You're offline — messages will send when you reconnect.");
     expect(renderChatHeader(state())).not.toContain("You're offline");
@@ -165,6 +228,22 @@ describe('renderChatHeader', () => {
 });
 
 describe('renderChatWindow', () => {
+  // A mask inside an icon repeats its id, and the first copy draws nothing when it sits in a hidden subtree.
+  it('cuts its icons’ holes with the page’s shared masks, never with masks of its own', () => {
+    const typing = state((s) => (s.conversations.lena.typing = true));
+    const html = renderContactsWindow(typing) + renderChatWindow(typing);
+    const masks = [...html.matchAll(/url\(#([\w-]+)\)/g)].map(([, id]) => id);
+    expect(new Set(masks)).toEqual(new Set(['ellipsis-holes', 'bubbles-gap', 'bubbles-fill-gap']));
+    expect(html).not.toContain('<mask');
+    for (const id of masks) expect(iconMasks).toContain(`<mask id="${id}"`);
+  });
+
+  it('lets clicks through the context menu’s layer to the window, while the menu takes them', () => {
+    const menu = dom(renderChatWindow(state((s) => (s.contextMenu = { messageId: 'lena-1375' })))).querySelector('[role="menu"][aria-label="Message"]')!;
+    expect(menu.parentElement!.classList.contains('pointer-events-none')).toBe(true);
+    expect(menu.classList.contains('pointer-events-auto')).toBe(true);
+  });
+
   it('shows the empty state when no conversation is active', () => {
     const doc = dom(renderChatWindow(state((s) => Object.assign(s, { activeConversationId: null, openTabs: [] }))));
     expect(doc.querySelector('[data-view="empty"]')!.hasAttribute('hidden')).toBe(false);

@@ -47,6 +47,8 @@ export interface Message {
   time: number;
   status: MessageStatus;
   edited: boolean;
+  /** How long ago the edit happened, for a relative "(edited …)" label. The live hero leaves it unset. */
+  editedSecondsAgo?: number;
   action: boolean;
 }
 

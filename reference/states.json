@@ -59,7 +59,7 @@
       "id": "contacts-status-offline",
       "window": "contacts",
       "appearances": ["light", "dark"],
-      "description": "Own status Offline; every contact shows offline"
+      "description": "Own status Offline; Ducko empties the contact list"
     },
     {
       "id": "contacts-room-row",

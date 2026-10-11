@@ -2,4 +2,4 @@ dist
 .astro
 pnpm-lock.yaml
 .turbo
-reference/**/*.png
+reference/captures/

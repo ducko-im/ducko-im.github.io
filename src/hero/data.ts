@@ -7,11 +7,11 @@ export const DUCK_AVATAR: Avatar = ME.avatar;
 
 export const EMPTY_COMPOSER: Composer = { draft: '', editingMessageId: null };
 
-export const WINDOW_SIZES = { contacts: { width: 280, height: 470 }, chat: { width: 520, height: 450 } };
+export const WINDOW_SIZES = { contacts: { width: 200, height: 555 }, chat: { width: 500, height: 450 } };
 
 export const DESKTOP_TAB_BAR_WIDTH = WINDOW_SIZES.chat.width - 2 * TAB_BAR_INSET;
 
-/** The moment the lab fixtures are rendered at, so their message times are stable. */
+/** A fixed moment to build a state at, so its seeded message times are stable. */
 export const FIXTURE_NOW = Date.UTC(2026, 9, 10, 14, 30, 0);
 
 export const PRESENCE_LABELS: Record<Presence, string> = {
@@ -47,8 +47,8 @@ const PARTICIPANTS: Participant[] = [
 const ROOMS: Room[] = [{ id: 'pond-club', name: 'Pond Club', subject: 'Peas, not bread 🫛', participants: PARTICIPANTS }];
 
 const GROUPS: Group[] = [
-  { id: 'friends', name: 'Friends', kind: 'contacts', memberIds: ['lena', 'jonas', 'mia', 'noah'], collapsed: false },
-  { id: 'work', name: 'Work', kind: 'contacts', memberIds: ['priya', 'marco', 'sofia', 'daniel', 'emma'], collapsed: false },
+  { id: 'friends', name: 'Friends', kind: 'contacts', memberIds: ['jonas', 'lena', 'mia', 'noah'], collapsed: false },
+  { id: 'work', name: 'Work', kind: 'contacts', memberIds: ['daniel', 'emma', 'marco', 'priya', 'sofia'], collapsed: false },
   { id: 'rooms', name: 'Rooms', kind: 'rooms', memberIds: ['pond-club'], collapsed: false },
 ];
 

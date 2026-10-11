@@ -1,8 +1,11 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import manifest from '../../../reference/states.json';
+import LabOverview from '../../components/lab/LabOverview.astro';
 import OgCard from '../../components/lab/OgCard.astro';
 import StateComparison from '../../components/lab/StateComparison.astro';
+import type { LabWindow } from '../../components/lab/lab';
+import { iconMasks } from '../../hero/view/icons';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
 // The lab is a development tool: production builds get no paths, so no lab page ships.
@@ -16,31 +19,15 @@ const state = manifest.states.find((s) => s.id === slug);
 ---
 
 <BaseLayout title={slug ? `Lab: ${slug}` : 'Lab'} noindex bodyClass="bg-neutral-200">
+  <Fragment set:html={iconMasks} />
   {slug === 'og' && <OgCard />}
-  {state && <StateComparison id={state.id} window={state.window as 'contacts' | 'chat' | 'dock'} description={state.description} />}
-  {slug === undefined && (
-    <main class="mx-auto max-w-3xl p-8 font-mac text-sm text-neutral-800">
-      <h1 class="mb-4 text-xl font-semibold">Fidelity lab</h1>
-      <p class="mb-6 text-neutral-600">Each state renders the web window from its fixture next to the reference capture in reference/captures/.</p>
-      <ul class="space-y-1">
-        {manifest.states.map((s) => (
-          <li class="flex gap-3">
-            <a class="w-56 text-sky-700 underline" href={`/lab/${s.id}/`}>
-              {s.id}
-            </a>
-            <a class="text-sky-700 underline" href={`/lab/${s.id}/?appearance=dark`}>
-              dark
-            </a>
-            <span class="text-neutral-500">{s.description}</span>
-          </li>
-        ))}
-        <li class="flex gap-3 pt-3">
-          <a class="w-56 text-sky-700 underline" href="/lab/og/">
-            og
-          </a>
-          <span class="text-neutral-500">The 1200×630 Open Graph card, screenshotted into public/og.png</span>
-        </li>
-      </ul>
-    </main>
-  )}
+  {state && <StateComparison id={state.id} window={state.window as LabWindow} description={state.description} />}
+  {slug === undefined && <LabOverview />}
 </BaseLayout>
+
+<style is:global>
+  /* Astro's dev toolbar would land in lab screenshots. */
+  astro-dev-toolbar {
+    display: none;
+  }
+</style>

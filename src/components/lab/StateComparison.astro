@@ -1,29 +1,19 @@
 ---
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { WINDOW_SIZES } from '../../hero/data';
-import { stateFor } from '../../hero/fixtures';
-import type { HeroWindow } from '../../hero/types';
-import { renderChatWindow } from '../../hero/view/chat';
-import { renderContactsWindow } from '../../hero/view/contacts';
-import { totalUnread } from '../../hero/view/shared';
 import { tw } from '../../hero/view/tw';
-import DockIcon from '../DockIcon.astro';
+import LabCapture from './LabCapture.astro';
+import LabWeb from './LabWeb.astro';
+import { type Appearance, type LabWindow, labCase, loadCaptures } from './lab';
 
 interface Props {
   id: string;
-  window: HeroWindow | 'dock';
+  window: LabWindow;
   description: string;
 }
 
 const { id, window, description } = Astro.props;
-const DOCK_TILE = 128;
-const state = stateFor(id);
-const size = window === 'dock' ? { width: DOCK_TILE, height: DOCK_TILE } : WINDOW_SIZES[window];
-const RENDERERS = { contacts: renderContactsWindow, chat: renderChatWindow };
-const html = window === 'dock' ? null : RENDERERS[window](state);
+const captures = loadCaptures();
 const TOOLBAR_BUTTON = tw`rounded border border-neutral-400 px-2 py-1 aria-pressed:bg-neutral-800 aria-pressed:text-white`;
-const APPEARANCES = [
+const APPEARANCES: [Appearance, string][] = [
   ['light', 'Light'],
   ['dark', 'Dark'],
 ];
@@ -32,26 +22,10 @@ const MODES = [
   ['overlay', 'Overlay'],
   ['difference', 'Difference'],
 ];
-
-const capturesDir = resolve('reference/captures');
-const captureJson = resolve(capturesDir, 'capture.json');
-const displayScale: number | undefined = existsSync(captureJson) ? JSON.parse(readFileSync(captureJson, 'utf8')).displayScale : undefined;
-
-// Captures are served from disk by Vite's /@fs/ route and never imported, so no capture can reach a build.
-function capture(appearance: 'light' | 'dark') {
-  const file = resolve(capturesDir, `${id}.${appearance}.png`);
-  if (!existsSync(file)) return null;
-  const header = readFileSync(file).subarray(16, 24);
-  const pixelWidth = header.readUInt32BE(0);
-  const pixelHeight = header.readUInt32BE(4);
-  const scale = displayScale ?? (Math.round(pixelWidth / size.width) >= 2 ? 2 : 1);
-  return { src: `/@fs${file}`, width: pixelWidth / scale, height: pixelHeight / scale };
-}
-
-const captures = { light: capture('light'), dark: capture('dark') };
+const pairs = APPEARANCES.map(([appearance]) => ({ appearance, ...labCase(captures, id, window, appearance) }));
 ---
 
-<div class="flex min-h-svh flex-col gap-4 bg-neutral-200 p-6 font-mac text-sm text-neutral-800" data-lab data-captures={JSON.stringify(captures)}>
+<div class="flex min-h-svh flex-col gap-4 bg-neutral-200 p-6 font-mac text-sm text-neutral-800" data-lab>
   <header class="flex flex-wrap items-center gap-3">
     <a href="/lab/" class="text-sky-700 underline">
       Lab
@@ -75,51 +49,38 @@ const captures = { light: capture('light'), dark: capture('dark') };
       Opacity <input type="range" min="0" max="100" value="50" data-opacity />
     </label>
   </div>
-  <div class="flex items-start gap-8" data-stage>
-    <div class="relative shrink-0" data-pair>
-      <div data-appearance="light" data-web style={`width:${size.width}px;height:${size.height}px`}>
-        {html === null ? <DockIcon size={DOCK_TILE} unread={totalUnread(state)} /> : <Fragment set:html={html} />}
-      </div>
-      <img data-capture alt="Reference capture" class="pointer-events-none absolute top-0 left-0" hidden />
+  {pairs.map(({ appearance, capture, layout, built }) => (
+    <div class="relative flex items-start gap-8 self-start" data-pair={appearance} hidden>
+      <LabWeb {window} {appearance} {layout} {built} />
+      {capture ? <LabCapture {capture} {layout} /> : <p class="text-neutral-500">No reference captured yet</p>}
     </div>
-    <p data-missing class="text-neutral-500" hidden>
-      No reference captured yet
-    </p>
-  </div>
+  ))}
 </div>
 
 <script>
-  type Capture = { src: string; width: number; height: number } | null;
+  import { settleChatWindows } from '../../hero/placement';
 
   const lab = document.querySelector<HTMLElement>('[data-lab]')!;
-  const captures = JSON.parse(lab.dataset.captures!) as Record<'light' | 'dark', Capture>;
-  const web = lab.querySelector<HTMLElement>('[data-web]')!;
-  const pair = lab.querySelector<HTMLElement>('[data-pair]')!;
-  const stage = lab.querySelector<HTMLElement>('[data-stage]')!;
-  const image = lab.querySelector<HTMLImageElement>('[data-capture]')!;
-  const missing = lab.querySelector<HTMLElement>('[data-missing]')!;
   const opacity = lab.querySelector<HTMLInputElement>('[data-opacity]')!;
   const opacityControl = lab.querySelector<HTMLElement>('[data-opacity-control]')!;
 
   const params = new URLSearchParams(location.search);
-  let appearance: 'light' | 'dark' = params.get('appearance') === 'dark' ? 'dark' : 'light';
+  let appearance = params.get('appearance') === 'dark' ? 'dark' : 'light';
   let mode = params.get('mode') ?? 'side';
 
   function render() {
-    web.dataset.appearance = appearance;
-    const capture = captures[appearance];
-    missing.hidden = capture !== null;
-    image.hidden = capture === null;
-    if (capture) {
-      image.src = capture.src;
-      image.style.width = `${capture.width}px`;
-      image.style.height = `${capture.height}px`;
-    }
     const stacked = mode !== 'side';
-    (stacked ? pair : stage).append(image);
-    image.classList.toggle('absolute', stacked);
-    image.style.mixBlendMode = mode === 'difference' ? 'difference' : '';
-    image.style.opacity = mode === 'overlay' ? String(Number(opacity.value) / 100) : '1';
+    for (const pair of lab.querySelectorAll<HTMLElement>('[data-pair]')) {
+      pair.hidden = pair.dataset.pair !== appearance;
+      const capture = pair.querySelector<HTMLElement>('[data-capture]');
+      if (!capture) continue;
+      capture.classList.toggle('absolute', stacked);
+      capture.classList.toggle('top-0', stacked);
+      capture.classList.toggle('left-0', stacked);
+      capture.style.mixBlendMode = mode === 'difference' ? 'difference' : '';
+      capture.style.opacity = mode === 'overlay' ? String(Number(opacity.value) / 100) : '1';
+    }
+    settleChatWindows(lab.querySelector(`[data-pair="${appearance}"]`)!);
     opacityControl.hidden = mode !== 'overlay';
     lab
       .querySelectorAll<HTMLElement>('[data-appearance-button]')
@@ -134,7 +95,7 @@ const captures = { light: capture('light'), dark: capture('dark') };
   lab.addEventListener('click', (event) => {
     const button = (event.target as HTMLElement).closest<HTMLElement>('[data-appearance-button], [data-mode-button]');
     if (!button) return;
-    if (button.dataset.appearanceButton) appearance = button.dataset.appearanceButton as 'light' | 'dark';
+    if (button.dataset.appearanceButton) appearance = button.dataset.appearanceButton;
     if (button.dataset.modeButton) mode = button.dataset.modeButton;
     render();
   });

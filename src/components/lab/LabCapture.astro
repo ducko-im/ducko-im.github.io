@@ -1,0 +1,22 @@
+---
+import { type Capture, type Layout, box, sizeStyle } from './lab';
+
+// The reference side of a comparison: the captured window with its menu layers composited at their recorded offsets.
+interface Props {
+  capture: Capture;
+  layout: Layout;
+  class?: string;
+}
+
+const { capture, layout, class: className } = Astro.props;
+const { x, y } = layout.window;
+---
+
+<div class:list={['pointer-events-none shrink-0', className]} style={sizeStyle(layout.frame)} data-capture>
+  <div class="relative size-full">
+    <img src={capture.src} alt="Reference capture" class="absolute max-w-none" style={box({ x, y, ...capture.size })} />
+    {capture.layers.map((layer) => (
+      <img src={layer.src} alt="" class="absolute max-w-none" style={box({ ...layer.rect, x: x + layer.rect.x, y: y + layer.rect.y })} />
+    ))}
+  </div>
+</div>
