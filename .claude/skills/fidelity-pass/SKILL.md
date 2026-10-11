@@ -102,7 +102,7 @@ done > <work>/counts-<before|after>.txt
 
 Read the zoom of every state whose count rose, and tune it unless what moved is a residual this step accepts.
 
-The edits also change the live hero. Before sign-off, check the live page `/` in light and dark: no scrolling at 1440×900, 1280×720, 1024×768 and 1024×700; scaled and not scrolling at 1280×600; the 820×1180 layout; the 390×844 phone deck. From 700 px wide up, the whole roster shows without scrolling, Rooms included. The phone deck's Contacts window keeps a fixed height rather than fitting itself to the roster.
+The edits also change the live hero. Before sign-off, check the live page `/` in light and dark: no scrolling at 1440×900, 1280×720, 1024×768 and 1024×700; scaled and not scrolling at 1280×600; the 820×1180 layout; the 390×844 phone deck. At every width, the Contacts window fits its expanded groups and shows the whole roster, Rooms included, without scrolling its list.
 
 ## Step 6: Sign Off
 

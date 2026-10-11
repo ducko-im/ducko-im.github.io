@@ -280,18 +280,20 @@
   .hero-slot {
     position: absolute;
 
-    /* --contacts-h reserves the whole roster; the client fits the window to its expanded groups, as Ducko does. */
+    /* The transform and filter animate the phone deck; the height animates the Contacts window's fit. */
+    @media (prefers-reduced-motion: no-preference) {
+      transition:
+        transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+        filter 0.3s,
+        height var(--contacts-resize-time, 0s) ease-in-out;
+    }
+
+    /* The client fits the window to its expanded groups, as Ducko does. Without it, the window shows the whole roster. */
     &[data-slot='contacts'] {
       top: 0;
       left: 0;
       width: var(--contacts-w);
       height: var(--contacts-window-h, var(--contacts-h));
-
-      @variant desk {
-        @media (prefers-reduced-motion: no-preference) {
-          transition: height var(--contacts-resize-time, 0s) ease-in-out;
-        }
-      }
     }
 
     &[data-slot='chat'] {
@@ -328,21 +330,10 @@
         pointer-events: none;
       }
 
-      &[data-slot='contacts'] {
-        width: 270px;
-        height: 420px;
-      }
-
       &[data-slot='chat'] {
         left: 22px;
         width: calc(100% - 22px);
         height: 460px;
-      }
-
-      @media (prefers-reduced-motion: no-preference) {
-        transition:
-          transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-          filter 0.3s;
       }
     }
 

@@ -34,7 +34,7 @@ pnpm test           # vitest run
 - `intro.ts`: the build-up when the windows first come into view. It starts from `introState()` (visitor offline, roster gray, the visible conversations empty) and plays up to `initialState()` through the engine. Any click in a window or focus on the input skips to the end. Reduced motion skips it, and without JavaScript the server-rendered full state stays.
 - `client.ts`: wires the store to the DOM, including the hero icon's Dock-style unread badge and bounce. It repaints a region only when its HTML changed and never repaints the composer, since replacing the textarea would drop its focus and caret. It syncs the textarea instead.
 - Menu layers: the status menu and the message context menu render in layers over their windows, because Ducko's menus are windows of their own. A Contacts window fitted to a few rows would clip the status menu, and the context menu reaches past the chat window's edge. `placement.ts` anchors the context menu to its bubble.
-- Contacts window height: from 700 px wide up, `client.ts` fits the window to its expanded groups (`contactsWindowHeight`) and slides the rows with the window's edge, as Ducko does. `--contacts-h` reserves the whole roster's height, so collapsing a group never moves the rest of the page.
+- Contacts window height: `client.ts` fits the window to its expanded groups (`contactsWindowHeight`) and slides the rows with the window's edge, as Ducko does. The hero's frame reserves the whole roster's height, so collapsing a group never moves the rest of the page. `--contacts-h` sets that height on wider screens, and the phone deck's fixed height covers it on phones.
 
 ## Window tokens and appearance
 
