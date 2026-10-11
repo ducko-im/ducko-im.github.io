@@ -7,7 +7,7 @@ export const DUCK_AVATAR: Avatar = ME.avatar;
 
 export const EMPTY_COMPOSER: Composer = { draft: '', editingMessageId: null };
 
-export const WINDOW_SIZES = { contacts: { width: 200, height: 555 }, chat: { width: 500, height: 450 } };
+export const WINDOW_SIZES = { contacts: { width: 200, height: 395 }, chat: { width: 500, height: 450 } };
 
 export const DESKTOP_TAB_BAR_WIDTH = WINDOW_SIZES.chat.width - 2 * TAB_BAR_INSET;
 
@@ -22,20 +22,16 @@ export const PRESENCE_LABELS: Record<Presence, string> = {
   offline: 'Offline',
 };
 
-function contact(id: string, name: string, presence: Presence, status: string | null, avatar: Avatar = {}, lastSeen: string | null = null): Contact {
+function contact(id: string, name: string, presence: Presence, status: string | null, avatar: Avatar, lastSeen: string | null = null): Contact {
   return { id, name, presence, status, lastSeen, avatar };
 }
 
 const CONTACTS: Contact[] = [
   contact('lena', 'Lena Fischer', 'available', 'Feeding the ducks', { emoji: '🦊', gradient: ['rgb(252 204 158)', 'rgb(250 158 107)'] }),
   contact('jonas', 'Jonas Weber', 'away', 'At the gym', { emoji: '🐼', gradient: ['rgb(189 230 204)', 'rgb(120 199 163)'] }),
-  contact('mia', 'Mia Schneider', 'available', null, { emoji: '🐱', gradient: ['rgb(250 199 219)', 'rgb(237 143 184)'] }),
   contact('noah', 'Noah Becker', 'offline', null, {}, '2 hours ago'),
   contact('priya', 'Priya Nair', 'dnd', 'Deep work until 3', { emoji: '🦉', gradient: ['rgb(204 199 247)', 'rgb(148 140 230)'] }),
   contact('marco', 'Marco Rossi', 'available', 'In code review', { emoji: '🐻', gradient: ['rgb(184 219 252)', 'rgb(107 173 242)'] }),
-  contact('sofia', 'Sofia Lindqvist', 'xa', 'Back on Monday', { emoji: '🐧', gradient: ['rgb(179 235 242)', 'rgb(97 199 219)'] }),
-  contact('daniel', 'Daniel Okafor', 'available', null),
-  contact('emma', 'Emma Dubois', 'offline', null),
 ];
 
 const PARTICIPANTS: Participant[] = [
@@ -47,8 +43,8 @@ const PARTICIPANTS: Participant[] = [
 const ROOMS: Room[] = [{ id: 'pond-club', name: 'Pond Club', subject: 'Peas, not bread 🫛', participants: PARTICIPANTS }];
 
 const GROUPS: Group[] = [
-  { id: 'friends', name: 'Friends', kind: 'contacts', memberIds: ['jonas', 'lena', 'mia', 'noah'], collapsed: false },
-  { id: 'work', name: 'Work', kind: 'contacts', memberIds: ['daniel', 'emma', 'marco', 'priya', 'sofia'], collapsed: false },
+  { id: 'friends', name: 'Friends', kind: 'contacts', memberIds: ['jonas', 'lena', 'noah'], collapsed: false },
+  { id: 'work', name: 'Work', kind: 'contacts', memberIds: ['marco', 'priya'], collapsed: false },
   { id: 'rooms', name: 'Rooms', kind: 'rooms', memberIds: ['pond-club'], collapsed: false },
 ];
 
@@ -65,10 +61,8 @@ const SEEDS: Record<string, Seed[]> = {
     ['in', 5400, 'Spotting you at the pond later? 🏋️'],
     ['out', 5300, 'Only if you carry the snacks.'],
   ],
-  mia: [['in', 7200, 'Did you see the new ducklings?! 🐣']],
   priya: [['out', 3600, 'Ping me when you surface 🙂']],
   marco: [['in', 2400, 'Your PR looks great. One nit about duck typing 🦆']],
-  sofia: [['in', 86400, 'Greetings from the fjords! 🏔️']],
   'pond-club': [
     ['in', 900, "Who's bringing bread?", 'Greta'],
     ['in', 840, 'Not bread! Peas are better for ducks 🫛', 'Kai'],
@@ -79,13 +73,9 @@ const SEEDS: Record<string, Seed[]> = {
 export const REPLIES: Record<string, string[]> = {
   lena: ['Ha, love it 😄', "Deal. I'll save you a spot by the reeds.", 'The ducks say hi 🦆', 'On my way!'],
   jonas: ['Back from the gym in 20 💪', 'Sounds like a plan.', "Can't talk, mid-set!"],
-  mia: ['Omg yes 😻', 'Send pictures!', 'Totally agree.'],
   noah: ["Sorry, just saw this. What's up?", 'Back online!'],
   priya: ['Surfacing soon, promise 🦉', 'Noted. Back after 3.', 'Thanks, will check later.'],
   marco: ['Approved ✅', 'Good catch, fixing it now.', 'Let me look after this review.'],
-  sofia: ['Out of office until Monday 🐧', 'Will reply properly when I’m back!'],
-  daniel: ['Hey Tobias! 👋', 'Sure thing.', 'Sounds good to me.'],
-  emma: ['Bonjour ! Just got back online.', 'Merci !'],
 };
 
 export const ROOM_LINES = [

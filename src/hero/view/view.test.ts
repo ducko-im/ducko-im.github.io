@@ -36,9 +36,9 @@ describe('formatTime', () => {
 
 describe('renderContactsList', () => {
   it('drops a collapsed group’s rows and keeps its count', () => {
-    const html = renderContactsList(state((s) => (s.groups[1].collapsed = true)));
-    expect(html).not.toContain('data-id="priya"');
-    expect(html).toContain('4 of 5');
+    const html = renderContactsList(state((s) => (s.groups[0].collapsed = true)));
+    expect(html).not.toContain('data-id="jonas"');
+    expect(html).toContain('2 of 3');
   });
 
   it('labels a single unread in the singular', () => {
@@ -80,7 +80,7 @@ describe('renderContactsWindow', () => {
 describe('contactsWindowHeight', () => {
   it('fits the whole roster to the reserved height and drops a collapsed group’s rows', () => {
     expect(contactsWindowHeight(state())).toBe(WINDOW_SIZES.contacts.height);
-    expect(contactsWindowHeight(state((s) => (s.groups[1].collapsed = true)))).toBe(WINDOW_SIZES.contacts.height - 5 * 40);
+    expect(contactsWindowHeight(state((s) => (s.groups[1].collapsed = true)))).toBe(WINDOW_SIZES.contacts.height - 2 * 40);
   });
 });
 
@@ -147,7 +147,7 @@ describe('renderTabs', () => {
   });
 
   it('keeps the active tab visible when the rest overflow', () => {
-    const tabs = ['lena', 'marco', 'pond-club', 'jonas', 'mia', 'priya'];
+    const tabs = ['lena', 'marco', 'pond-club', 'jonas', 'noah', 'priya'];
     const doc = dom(renderTabs(state((s) => Object.assign(s, { openTabs: tabs, activeConversationId: 'priya', tabBarWidth: 300, openMenu: 'overflow' }))));
     const visible = [...doc.querySelectorAll('[data-tab]')].map((tab) => tab.getAttribute('data-tab'));
     const overflow = [...doc.querySelectorAll('[role="menu"] [data-action="activate-tab"]')].map((item) => item.getAttribute('data-id'));

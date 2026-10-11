@@ -106,10 +106,10 @@ describe('selectRow and activateTab', () => {
   it('opens one tab for a new conversation and brings the chat window forward', () => {
     const { engine, state } = setup();
     engine.setFrontWindow('contacts');
-    engine.selectRow('mia');
-    engine.selectRow('mia');
-    expect(state().openTabs).toEqual(['lena', 'marco', 'pond-club', 'mia']);
-    expect(state()).toMatchObject({ activeConversationId: 'mia', selectedRowId: 'mia', frontWindow: 'chat' });
+    engine.selectRow('jonas');
+    engine.selectRow('jonas');
+    expect(state().openTabs).toEqual(['lena', 'marco', 'pond-club', 'jonas']);
+    expect(state()).toMatchObject({ activeConversationId: 'jonas', selectedRowId: 'jonas', frontWindow: 'chat' });
   });
 
   it('closes the overflow menu when a tab is picked from it', () => {
@@ -202,10 +202,10 @@ describe('offline', () => {
     ['lena', 'marco', 'pond-club'].forEach((id) => engine.closeTab(id));
     engine.setPresence('offline');
     engine.setPresence('available');
-    engine.selectRow('mia');
-    engine.send('mia', 'hi');
+    engine.selectRow('jonas');
+    engine.send('jonas', 'hi');
     vi.runAllTimers();
-    expect(last('mia')).toMatchObject({ direction: 'in', sender: 'mia' });
+    expect(last('jonas')).toMatchObject({ direction: 'in', sender: 'jonas' });
   });
 
   it('keeps pending replies through away, extended away and do not disturb', () => {

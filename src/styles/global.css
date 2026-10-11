@@ -230,7 +230,7 @@
    */
   .hero {
     --window-gap: 20px;
-    --chat-top: 40px;
+    --chat-top: 52px;
     --hero-frame-w: calc(var(--contacts-w) + var(--window-gap) + var(--chat-w));
     --hero-frame-h: max(var(--contacts-h), calc(var(--chat-top) + var(--chat-h)));
     --hero-scale-w: 1;
@@ -334,7 +334,6 @@
       }
 
       &[data-slot='chat'] {
-        top: 52px;
         left: 22px;
         width: calc(100% - 22px);
         height: 460px;

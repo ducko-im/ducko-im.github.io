@@ -161,7 +161,7 @@ describe('the Contacts window', () => {
 
   /**
    * Stands in for two things happy-dom lacks. One is Chromium's `getAnimations()`, which returns only running
-   * animations and skips detached elements. The other is a height for the Work rows: 200 px at rest, `reached` while
+   * animations and skips detached elements. The other is a height for the Work rows: 80 px at rest, `reached` while
    * they slide, none once detached.
    */
   function motion() {
@@ -170,10 +170,10 @@ describe('the Contacts window', () => {
     vi.spyOn(Element.prototype, 'getAnimations').mockImplementation(function (this: Element) {
       return this.isConnected ? getAnimations.call(this).filter((animation) => animation.playState === 'running') : [];
     });
-    const heights = { reached: 200 };
+    const heights = { reached: 80 };
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
       if (!this.isConnected || !this.matches('[data-group-rows]')) return 0;
-      return this.getAnimations().length > 0 ? heights.reached : 200;
+      return this.getAnimations().length > 0 ? heights.reached : 80;
     });
     const animations = (selector: string) =>
       animate.mock.results.flatMap(({ value }, index) => {
@@ -191,17 +191,17 @@ describe('the Contacts window', () => {
     const { slides, turns } = motion();
     const { $ } = mount();
     const slot = $('[data-slot="contacts"]');
-    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('555px');
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('395px');
     $(work).click();
-    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('355px');
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('315px');
     expect($(work).getAttribute('aria-expanded')).toBe('false');
 
     // 0.2 s per 150 pt, for the window's transition and the slide alike.
     const [slide] = slides();
-    expect(resizeTime(slot)).toBeCloseTo(0.2667, 4);
-    expect(slide.duration).toBeCloseTo(266.67, 2);
+    expect(resizeTime(slot)).toBeCloseTo(0.1067, 4);
+    expect(slide.duration).toBeCloseTo(106.67, 2);
     expect(slide.easing).toBe('ease-in-out');
-    expect(slide.keyframes).toEqual([{ height: '200px' }, { height: '0px' }]);
+    expect(slide.keyframes).toEqual([{ height: '80px' }, { height: '0px' }]);
     expect(slide.target.inert).toBe(true);
     expect(slide.target.previousElementSibling).toBe($(work));
     expect(slide.target.style.overflow).toBe('hidden');
@@ -219,7 +219,7 @@ describe('the Contacts window', () => {
     slides()[0].animation.finish();
     $(work).click();
     const slide = slides()[1];
-    expect(slide.keyframes).toEqual([{ height: '0px' }, { height: '200px' }]);
+    expect(slide.keyframes).toEqual([{ height: '0px' }, { height: '80px' }]);
     expect(slide.target).toBe($('[data-group-rows="work"]'));
     expect(slide.target.style.overflow).toBe('hidden');
     expect(turns()[1].keyframes).toEqual([{ rotate: '0deg' }, { rotate: '90deg' }]);
@@ -229,9 +229,9 @@ describe('the Contacts window', () => {
     expect(slide.target.getAttribute('style')).toBeNull();
 
     // At rest again, the rows collapse from their full height, whatever the finished slide passed through.
-    heights.reached = 126;
+    heights.reached = 50;
     $(work).click();
-    expect(slides()[2].keyframes).toEqual([{ height: '200px' }, { height: '0px' }]);
+    expect(slides()[2].keyframes).toEqual([{ height: '80px' }, { height: '0px' }]);
   });
 
   // The repaint detaches the sliding rows before the next slide starts, so the old slide has to be cancelled through
@@ -245,22 +245,22 @@ describe('the Contacts window', () => {
 
     $(work).click();
     const expanding = slides()[1];
-    heights.reached = 126;
+    heights.reached = 50;
     $(work).click();
     const collapsing = slides()[2];
     expect(expanding.animation.playState).toBe('idle');
     expect(collapsing.target).toBe(expanding.target);
-    expect(collapsing.keyframes).toEqual([{ height: '126px' }, { height: '0px' }]);
-    expect(collapsing.duration).toBeCloseTo(168, 2);
+    expect(collapsing.keyframes).toEqual([{ height: '50px' }, { height: '0px' }]);
+    expect(collapsing.duration).toBeCloseTo(66.67, 2);
     expect(collapsing.target.style.overflow).toBe('hidden');
-    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('355px');
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('315px');
 
-    heights.reached = 80;
+    heights.reached = 20;
     $(work).click();
     const [, , , again] = slides();
     expect(collapsing.animation.playState).toBe('idle');
-    expect(again.keyframes).toEqual([{ height: '80px' }, { height: '200px' }]);
-    expect(again.duration).toBeCloseTo(160, 2);
+    expect(again.keyframes).toEqual([{ height: '20px' }, { height: '80px' }]);
+    expect(again.duration).toBeCloseTo(80, 2);
     again.animation.finish();
     expect(again.target.getAttribute('style')).toBeNull();
     expect(document.querySelectorAll('[data-group-rows="work"]')).toHaveLength(1);
@@ -272,12 +272,12 @@ describe('the Contacts window', () => {
     $(work).click();
     slides()[0].animation.finish();
     $(work).click();
-    heights.reached = 126;
+    heights.reached = 50;
     $('[data-action="select-row"][data-id="jonas"]').click();
     expect(slides()[1].target.isConnected).toBe(false);
 
     $(work).click();
-    expect(slides()[2].keyframes).toEqual([{ height: '200px' }, { height: '0px' }]);
+    expect(slides()[2].keyframes).toEqual([{ height: '80px' }, { height: '0px' }]);
   });
 
   it('resizes without sliding under reduced motion', () => {
@@ -285,10 +285,10 @@ describe('the Contacts window', () => {
     const { $ } = mount({ reducedMotion: true });
     const slot = $('[data-slot="contacts"]');
     $(work).click();
-    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('355px');
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('315px');
     expect($('[data-group-rows="work"]')).toBeNull();
     $(work).click();
-    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('555px');
+    expect(slot.style.getPropertyValue('--contacts-window-h')).toBe('395px');
     expect($('[data-group-rows="work"]').getAttribute('style')).toBeNull();
     expect([...slides(), ...turns()]).toEqual([]);
   });

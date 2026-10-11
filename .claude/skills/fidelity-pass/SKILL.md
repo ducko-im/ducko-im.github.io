@@ -88,7 +88,7 @@ Read the `zoom` image for shapes and glyphs, and `boxes`, `scan` and `color` for
 
 After each region, screenshot the `/lab/` overview in Chromium and read it, along with the affected states in overlay. The overview is many screens tall: take it with `agent-browser screenshot --full` at a wide viewport and split the image into screen-sized parts to read it. Keep `pnpm test` green.
 
-The edits also change the live hero. Before sign-off, check the live page `/` in light and dark: no scrolling at 1440×900, 1280×720, 1024×768 and 1024×700; scaled and not scrolling at 1280×600; the 820×1180 layout; the 390×844 phone deck. From 700 px wide up, the whole roster shows without scrolling, Rooms included. The phone deck's Contacts window has a fixed height and scrolls its list.
+The edits also change the live hero. Before sign-off, check the live page `/` in light and dark: no scrolling at 1440×900, 1280×720, 1024×768 and 1024×700; scaled and not scrolling at 1280×600; the 820×1180 layout; the 390×844 phone deck. From 700 px wide up, the whole roster shows without scrolling, Rooms included. The phone deck's Contacts window keeps a fixed height rather than fitting itself to the roster.
 
 ## Step 6: Sign Off
 
