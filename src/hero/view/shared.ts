@@ -1,7 +1,7 @@
 import { DUCK_AVATAR, EMPTY_COMPOSER, PRESENCE_LABELS } from '../data';
 import type { Avatar, Conversation, HeroState, Message, Participant, Presence, Room } from '../types';
 import { escapeHtml } from './escape';
-import { icons } from './icons';
+import { icon } from './icons';
 import { tw } from './tw';
 
 const DOT_CLASSES: Record<Presence, string> = {
@@ -67,8 +67,7 @@ export function activityIndicator(conversation: Conversation, idle: string): str
   if (conversation.unread > 0) {
     return `<span class="${tw`grid size-4 place-items-center rounded-full bg-mac-red text-[9px] leading-none font-semibold text-white`}" role="img" aria-label="${unreadDescription(conversation.unread)}" data-unread>${conversation.unread > 9 ? '9+' : conversation.unread}</span>`;
   }
-  if (conversation.kind === 'chat' && conversation.typing)
-    return `<span class="${tw`text-secondary-label`}" data-typing>${icons.ellipsisBubbleFill(13)}</span>`;
+  if (conversation.kind === 'chat' && conversation.typing) return `<span class="${tw`text-secondary-label`}" data-typing>${icon('ellipsisBubbleFill')}</span>`;
   return idle;
 }
 

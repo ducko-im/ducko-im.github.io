@@ -2,7 +2,7 @@ import { ME, PRESENCE_LABELS } from '../data';
 import type { Contact, Conversation, Group, HeroState, Presence, Room } from '../types';
 import { divider, isKey, titlebar, windowClass } from './chrome';
 import { escapeHtml } from './escape';
-import { icons } from './icons';
+import { icon } from './icons';
 import { activityIndicator, avatar, displayedPresence, isInRooms, menuClass, menuItemClass, menuSeparator, participantCaption, presenceDot } from './shared';
 import { tw } from './tw';
 
@@ -23,7 +23,7 @@ export function renderStatusMenu(state: HeroState): string {
   const items = SELECTABLE_PRESENCES.map(
     (presence) =>
       `<button type="button" role="menuitemradio" aria-checked="${presence === state.ownPresence}" data-action="set-presence" data-presence="${presence}" class="${menuItemClass} ${tw`group/item pl-2.5`}">
-        ${presenceDot(presence)}<span>${escapeHtml(PRESENCE_LABELS[presence])}</span>${presence === state.ownPresence ? `<span class="${tw`ml-0.5`}">${icons.checkmark(13.5)}</span>` : ''}
+        ${presenceDot(presence)}<span>${escapeHtml(PRESENCE_LABELS[presence])}</span>${presence === state.ownPresence ? icon('checkmarkMenu', tw`ml-0.5`) : ''}
       </button>`,
   ).join('');
   const custom = `<button type="button" role="menuitem" data-action="hint" data-hint-anchor="custom-status" class="${menuItemClass}">Custom…</button>`;
@@ -38,7 +38,7 @@ export function renderStatusHeader(state: HeroState): string {
     <div class="${tw`flex min-w-0 flex-col items-start gap-0.5`}">
       <span class="${tw`truncate font-semibold`}">${escapeHtml(ME.name)}</span>
       <button type="button" data-action="status-menu" aria-haspopup="menu" aria-expanded="${expanded}" class="${tw`-mx-[5px] flex items-center gap-[3px] rounded-[5px] px-[5px] py-px text-mac-callout text-secondary-label hover:bg-hover-fill`} ${hovered ? tw`bg-hover-fill` : ''}">
-        <span>${escapeHtml(PRESENCE_LABELS[state.ownPresence])}</span>${icons.chevronDown(10)}
+        <span>${escapeHtml(PRESENCE_LABELS[state.ownPresence])}</span>${icon('chevronDownStatus')}
       </button>
     </div>
     <div class="${tw`flex-1`}"></div>
@@ -54,7 +54,7 @@ function groupCounts(state: HeroState, group: Group): string {
 function renderGroupHeader(state: HeroState, group: Group): string {
   const expanded = !group.collapsed;
   return `<button type="button" data-action="toggle-group" data-id="${group.id}" aria-expanded="${expanded}" class="${tw`flex h-[22px] w-full items-center gap-2 px-3 text-left`}">
-    <span data-chevron class="${tw`flex w-2 justify-center text-secondary-label`} ${expanded ? tw`rotate-90` : ''}">${icons.chevronRight(12.5)}</span>
+    <span data-chevron class="${tw`flex w-2 justify-center text-secondary-label`} ${expanded ? tw`rotate-90` : ''}">${icon('chevronRightGroup')}</span>
     <span class="${tw`truncate text-mac-subheadline font-semibold text-secondary-label`}">${escapeHtml(group.name)}</span>
     <span class="${tw`flex-1`}"></span>
     ${group.kind === 'contacts' ? groupCounts(state, group) : ''}
@@ -103,7 +103,7 @@ function renderRoomRow(state: HeroState, room: Room): string {
       ${caption ? `<span class="${tw`truncate text-mac-caption`} ${classes.secondary}">${escapeHtml(caption)}</span>` : ''}
     </span>
     <span class="${tw`flex-1`}"></span>
-    <span class="${tw`grid size-8 shrink-0 place-items-center`} ${classes.secondary}">${icons.bubblesFill(16)}</span>
+    <span class="${tw`grid size-8 shrink-0 place-items-center`} ${classes.secondary}">${icon('bubblesFillRoom')}</span>
   </button>`;
 }
 

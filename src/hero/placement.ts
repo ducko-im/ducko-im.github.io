@@ -20,6 +20,6 @@ export function placeContextMenu(layer: HTMLElement) {
 
 /** Settles statically rendered chat windows the way the live hero does after a paint: newest message in view, context menu placed. */
 export function settleChatWindows(root: ParentNode) {
-  root.querySelectorAll<HTMLElement>('[data-region="timeline"]').forEach((timeline) => (timeline.scrollTop = timeline.scrollHeight));
+  root.querySelectorAll<HTMLElement>('[data-region="timeline"]').forEach((timeline) => (timeline.scrollTop = 0));
   root.querySelectorAll<HTMLElement>('[data-region="context-menu"]').forEach(placeContextMenu);
 }

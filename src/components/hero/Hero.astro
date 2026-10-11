@@ -3,7 +3,6 @@ import { site } from '../../data/site';
 import { WINDOW_SIZES, initialState } from '../../hero/data';
 import { renderChatWindow } from '../../hero/view/chat';
 import { renderContactsWindow } from '../../hero/view/contacts';
-import { iconMasks } from '../../hero/view/icons';
 import { totalUnread } from '../../hero/view/shared';
 import { getLatestRelease } from '../../lib/release';
 import DockIcon from '../DockIcon.astro';
@@ -19,7 +18,6 @@ const windowSizes = `--contacts-w:${contacts.width}px;--contacts-h:${contacts.he
 
 <main class="hero relative isolate flex min-h-svh flex-col overflow-hidden text-white dark:text-sky-100" style={windowSizes} data-hero>
   <PondBackdrop />
-  <Fragment set:html={iconMasks} />
 
   <div class="desk:px-8 desk:pt-12 desk:pb-6 px-5 pt-10 lg:grid lg:flex-1 lg:grid-cols-[minmax(300px,420px)_minmax(0,var(--hero-frame-w))] lg:items-center lg:justify-center lg:gap-x-10 xl:gap-x-16 xl:px-14">
     <section class="rise-in relative">

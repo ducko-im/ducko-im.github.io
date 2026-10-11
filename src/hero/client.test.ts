@@ -308,20 +308,18 @@ describe('the composer', () => {
   it('keeps the newest message in view when the timeline resizes', () => {
     const { $, resize } = mount({ reducedMotion: true });
     const timeline = $('[data-region="timeline"]');
-    Object.defineProperty(timeline, 'scrollHeight', { value: 900 });
-    timeline.scrollTop = 0;
+    timeline.scrollTop = -300;
     resize(timeline);
-    expect(timeline.scrollTop).toBe(900);
+    expect(timeline.scrollTop).toBe(0);
   });
 
   it('keeps the newest message in view when one is sent', () => {
     const { $, input } = mount({ reducedMotion: true });
     const timeline = $('[data-region="timeline"]');
-    Object.defineProperty(timeline, 'scrollHeight', { value: 900 });
-    timeline.scrollTop = 0;
+    timeline.scrollTop = -300;
     type(input, 'hi');
     press(input, 'Enter');
-    expect(timeline.scrollTop).toBe(900);
+    expect(timeline.scrollTop).toBe(0);
   });
 
   it('sends on Return, but not on Shift-Return or while an IME composes', () => {

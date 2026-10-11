@@ -5,7 +5,6 @@ import LabOverview from '../../components/lab/LabOverview.astro';
 import OgCard from '../../components/lab/OgCard.astro';
 import StateComparison from '../../components/lab/StateComparison.astro';
 import type { LabWindow } from '../../components/lab/lab';
-import { iconMasks } from '../../hero/view/icons';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
 // The lab is a development tool: production builds get no paths, so no lab page ships.
@@ -19,7 +18,6 @@ const state = manifest.states.find((s) => s.id === slug);
 ---
 
 <BaseLayout title={slug ? `Lab: ${slug}` : 'Lab'} noindex bodyClass="bg-neutral-200">
-  <Fragment set:html={iconMasks} />
   {slug === 'og' && <OgCard />}
   {state && <StateComparison id={state.id} window={state.window as LabWindow} description={state.description} />}
   {slug === undefined && <LabOverview />}

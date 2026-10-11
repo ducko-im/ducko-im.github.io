@@ -54,11 +54,14 @@ Work through the regions in this order, light first, then dark: window chrome (c
 Allowed edits:
 
 - window tokens in `src/styles/global.css`
-- classes and markup in `src/hero/view/*.ts`, including redrawing an SVG in `icons.ts` that differs from the captured SF Symbol
+- classes and markup in `src/hero/view/*.ts`
+- the icon table in [symbols.swift](scripts/symbols.swift), never the `src/hero/view/symbols.ts` it generates
 - the badge in `src/components/DockIcon.astro`, which the live hero shares
 - `src/hero/fixtures.ts` and `types.ts`, only to map `content.json` fields; a difference in what a state shows goes to the ducko repo's `content.json` and a recapture
 - `src/hero/data.ts`, for the live hero's own roster and copy
 - `WINDOW_SIZES`, only under Step 4's size condition, or its Contacts height when a tuned metric or the live roster changes the whole roster's height
+
+The icons are SF Symbols exported from this Mac. Each table entry names the symbol and the text style or size and weight Ducko's view sets for it. After changing the table, run `swift .claude/skills/fidelity-pass/scripts/symbols.swift src/hero/view/symbols.ts`, then `pnpm format`. The export follows the captures only when this Mac runs the macOS release `capture.json` records, which the generated file's header names. Rerun it once a recapture and this Mac are on the same new release, and leave `symbols.ts` as it is while they differ. AppKit draws some glyphs itself, such as a menu's indicator. Render candidates for one with `swift .claude/skills/fidelity-pass/scripts/symbols.swift --png <work>/candidates <symbol> <point-size> <weight>`, enter the closest in the table, and bring what still differs to Step 6.
 
 Measure rather than eyeball. The PNGs carry the capture display's color profile, so convert the captures to sRGB once per import:
 
@@ -87,6 +90,17 @@ Read the `zoom` image for shapes and glyphs, and `boxes`, `scan` and `color` for
 - Bring anything the web cannot reproduce, such as glass or vibrancy, to Step 6 as an open deviation instead of tuning it further.
 
 After each region, screenshot the `/lab/` overview in Chromium and read it, along with the affected states in overlay. The overview is many screens tall: take it with `agent-browser screenshot --full` at a wide viewport and split the image into screen-sized parts to read it. Keep `pnpm test` green.
+
+The overview's difference mode hides shifts of a point or two. Before an edit that changes a shared element's size or metrics, such as an icon's box, count every state's differing pixels into `<work>/counts-before.txt`, and after it into `<work>/counts-after.txt`:
+
+```bash
+for pair in $(python3 -c "import json; print(' '.join(f\"{s['id']}.{a}\" for s in json.load(open('reference/states.json'))['states'] for a in s['appearances']))"); do
+  .claude/skills/fidelity-pass/scripts/shoot.sh <work> ${pair%.*} ${pair##*.} >/dev/null
+  echo "$pair: $(swift <ducko>/Skills/demo-screenshots/scripts/compare.swift <work>/web/$pair.png <work>/srgb/$pair.png 2>&1)"
+done > <work>/counts-<before|after>.txt
+```
+
+Read the zoom of every state whose count rose, and tune it unless what moved is a residual this step accepts.
 
 The edits also change the live hero. Before sign-off, check the live page `/` in light and dark: no scrolling at 1440×900, 1280×720, 1024×768 and 1024×700; scaled and not scrolling at 1280×600; the 820×1180 layout; the 390×844 phone deck. From 700 px wide up, the whole roster shows without scrolling, Rooms included. The phone deck's Contacts window keeps a fixed height rather than fitting itself to the roster.
 

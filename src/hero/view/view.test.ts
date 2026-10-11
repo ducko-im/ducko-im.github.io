@@ -6,7 +6,6 @@ import { renderChatHeader, renderChatWindow, renderComposer, renderTabs, renderT
 import { contactsWindowHeight, renderContactsList, renderContactsWindow } from './contacts';
 import { escapeHtml } from './escape';
 import { formatTime } from './format';
-import { iconMasks } from './icons';
 import { messageText } from './shared';
 
 function state(edit: (state: HeroState) => void = () => {}): HeroState {
@@ -228,16 +227,6 @@ describe('renderChatHeader', () => {
 });
 
 describe('renderChatWindow', () => {
-  // A mask inside an icon repeats its id, and the first copy draws nothing when it sits in a hidden subtree.
-  it('cuts its icons’ holes with the page’s shared masks, never with masks of its own', () => {
-    const typing = state((s) => (s.conversations.lena.typing = true));
-    const html = renderContactsWindow(typing) + renderChatWindow(typing);
-    const masks = [...html.matchAll(/url\(#([\w-]+)\)/g)].map(([, id]) => id);
-    expect(new Set(masks)).toEqual(new Set(['ellipsis-holes', 'bubbles-gap', 'bubbles-fill-gap']));
-    expect(html).not.toContain('<mask');
-    for (const id of masks) expect(iconMasks).toContain(`<mask id="${id}"`);
-  });
-
   it('lets clicks through the context menu’s layer to the window, while the menu takes them', () => {
     const menu = dom(renderChatWindow(state((s) => (s.contextMenu = { messageId: 'lena-1375' })))).querySelector('[role="menu"][aria-label="Message"]')!;
     expect(menu.parentElement!.classList.contains('pointer-events-none')).toBe(true);

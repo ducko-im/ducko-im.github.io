@@ -165,7 +165,7 @@ export function startHero(hero: HTMLElement) {
       if (painted.get(name) === html) continue;
       regions.get(name)!.innerHTML = html;
       painted.set(name, html);
-      if (name === 'timeline') regions.get(name)!.scrollTop = regions.get(name)!.scrollHeight;
+      if (name === 'timeline') regions.get(name)!.scrollTop = 0;
     }
     fitContacts(state, previous);
     slideGroups(slides);
@@ -328,7 +328,7 @@ export function startHero(hero: HTMLElement) {
   // context menu on its bubble.
   const timeline = regions.get('timeline')!;
   new ResizeObserver(() => {
-    timeline.scrollTop = timeline.scrollHeight;
+    timeline.scrollTop = 0;
     placeContextMenu(regions.get('context-menu')!);
   }).observe(timeline);
   timeline.addEventListener('scroll', () => placeContextMenu(regions.get('context-menu')!));
