@@ -153,6 +153,7 @@ export function initialState(now = Date.now(), format: HeroState['format'] = { l
     duckMode: false,
     splash: 0,
     forcedHover: null,
+    forcedSelection: null,
     format,
   };
 }

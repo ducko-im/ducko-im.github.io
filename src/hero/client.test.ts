@@ -125,23 +125,23 @@ describe('clicks', () => {
   });
 
   // The chat window is drawn at half size: 250 px on screen for its 500 px layout.
-  it('opens the context menu at its bubble’s centre in the window’s unscaled coordinates and keeps it there', () => {
+  it('opens the context menu at the pointer in the window’s unscaled coordinates and keeps it on that spot of its bubble', () => {
     const { $, resize } = mount({ reducedMotion: true });
     const bubble = $('[data-own-bubble]');
     layout($('[data-region="context-menu"]'), { left: 100, top: 50, width: 250, height: 225 }, 500);
     layout(bubble, { left: 300, top: 150, width: 40, height: 20 });
-    bubble.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    bubble.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 310, clientY: 155 }));
     const menu = $('[role="menu"][aria-label="Message"]');
-    expect(menu.style.left).toBe('440px');
-    expect(menu.style.top).toBe('214.5px');
+    expect(menu.style.left).toBe('420px');
+    expect(menu.style.top).toBe('204.5px');
 
     const timeline = $('[data-region="timeline"]');
     layout(bubble, { left: 300, top: 100, width: 40, height: 20 });
     timeline.dispatchEvent(new Event('scroll'));
-    expect(menu.style.top).toBe('114.5px');
+    expect(menu.style.top).toBe('104.5px');
     layout(bubble, { left: 280, top: 100, width: 40, height: 20 });
     resize(timeline);
-    expect(menu.style.left).toBe('400px');
+    expect(menu.style.left).toBe('380px');
   });
 
   it('closes an open menu on a click outside the hero', () => {
@@ -191,6 +191,59 @@ describe('windows', () => {
     $(jonas).focus();
     click($(jonas));
     expect(document.activeElement).toBe($(jonas));
+  });
+
+  it('moves the selection with the arrow keys and opens it with Return while Contacts is key', () => {
+    const { $ } = mount({ reducedMotion: true });
+    intersect(true);
+    click($(jonas));
+    press(document.body, 'ArrowDown');
+    expect($('[data-action="select-row"][data-id="lena"]').getAttribute('aria-pressed')).toBe('true');
+    press(document.body, 'Enter');
+    expect($('[data-windows]').dataset.front).toBe('chat');
+    expect($('[data-tab="lena"]').getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('keeps a transcript selection when the mouse goes down in Contacts', () => {
+    const { $ } = mount({ reducedMotion: true });
+    const mouseDownOnJonas = () => {
+      const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      $(jonas).dispatchEvent(down);
+      return down.defaultPrevented;
+    };
+    expect(mouseDownOnJonas()).toBe(false);
+    const bubble = $('[data-region="timeline"] [data-bubble]');
+    pointerDown(bubble, 'mouse');
+    const range = document.createRange();
+    range.selectNodeContents(bubble);
+    getSelection()!.addRange(range);
+    expect(mouseDownOnJonas()).toBe(true);
+    pointerDown($(jonas), 'mouse');
+    expect(bubble.classList.contains('select-text')).toBe(true);
+  });
+
+  it('leaves Return on a focused row to the row, and the arrow keys to the page once a click lands outside the windows', () => {
+    const { $ } = mount({ reducedMotion: true });
+    intersect(true);
+    click($(jonas));
+    const lena = $('[data-action="select-row"][data-id="lena"]');
+    lena.focus();
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    lena.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(false);
+    lena.blur();
+    $('[data-windows-frame]').click();
+    press(document.body, 'ArrowDown');
+    expect($(jonas).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps the transcript where the visitor scrolled it when the key window changes', () => {
+    const { $ } = mount({ reducedMotion: true });
+    const timeline = $('[data-region="timeline"]');
+    timeline.scrollTop = -300;
+    $('[data-region="contacts-titlebar"]').click();
+    expect($('[data-windows]').dataset.front).toBe('contacts');
+    expect(timeline.scrollTop).toBe(-300);
   });
 
   it('opens a chat on a tap', () => {

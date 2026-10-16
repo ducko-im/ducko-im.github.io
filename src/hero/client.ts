@@ -2,7 +2,7 @@ import { initialState } from './data';
 import { createEngine } from './engine';
 import { createIntro, introState } from './intro';
 import { morph } from './morph';
-import { placeContextMenu } from './placement';
+import { type BubblePoint, placeContextMenu, pointInBubble } from './placement';
 import { createAmbient } from './scheduler';
 import { createStore } from './store';
 import { TAB_BAR_INSET } from './tabs';
@@ -71,6 +71,10 @@ export function startHero(hero: HTMLElement) {
   let hintBubble: HTMLElement | null = null;
   let pressedBubbleId: string | undefined;
   let lastPointerType = '';
+  let onScreen = false;
+  // Whether the last click landed in a window, so the windows have the keyboard rather than the rest of the page.
+  let windowsHaveKeyboard = false;
+  let menuPoint: BubblePoint | undefined;
 
   function animate(element: Element | null, className: string) {
     if (!element || reducedMotion.matches) return;
@@ -167,14 +171,19 @@ export function startHero(hero: HTMLElement) {
     }
   }
 
+  function focusControl(region: HTMLElement, action: string, id?: string) {
+    const selector = `[data-action="${CSS.escape(action)}"]${id ? `[data-id="${CSS.escape(id)}"]` : ''}`;
+    region.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
+  }
+
   // A focused control keeps its focus across a repaint, so a keyboard user stays on the row they selected.
   function replaceKeepingFocus(region: HTMLElement, html: string) {
     const focused = region.contains(document.activeElement) ? (document.activeElement as HTMLElement).dataset : {};
     region.innerHTML = html;
-    if (!focused.action) return;
-    const selector = `[data-action="${CSS.escape(focused.action)}"]${focused.id ? `[data-id="${CSS.escape(focused.id)}"]` : ''}`;
-    region.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
+    if (focused.action) focusControl(region, focused.action, focused.id);
   }
+
+  const placeMenu = () => placeContextMenu(regions.get('context-menu')!, menuPoint);
 
   function paint(state: HeroState, previous: HeroState | null) {
     const slides = previous ? measureSlides(state, previous) : [];
@@ -185,17 +194,17 @@ export function startHero(hero: HTMLElement) {
       painted.set(name, html);
       if (name === 'timeline') {
         // Patched in place, so a text selection in a message that stays the same survives the repaint. The patch resets
-        // each bubble's classes, so the pressed bubble is marked again.
-        morph(region, html, 'data-message-id');
+        // each bubble's classes, so the pressed bubble is marked again. Only new content brings the newest message back
+        // into view, so a change of key window leaves the transcript where the visitor scrolled it.
+        if (morph(region, html, 'data-message-id')) region.scrollTop = 0;
         markSelectable();
-        region.scrollTop = 0;
       } else {
         replaceKeepingFocus(region, html);
       }
     }
     fitContacts(state, previous);
     slideGroups(slides);
-    placeContextMenu(regions.get('context-menu')!);
+    placeMenu();
     conversationView.hidden = state.activeConversationId === null;
     emptyView.hidden = state.activeConversationId !== null;
     deck.dataset.front = state.frontWindow;
@@ -285,6 +294,7 @@ export function startHero(hero: HTMLElement) {
   hero.addEventListener('click', (event) => {
     heroClick = event;
     const slot = (event.target as HTMLElement).closest<HTMLElement>('[data-slot]');
+    windowsHaveKeyboard = slot !== null;
     const target = (event.target as HTMLElement).closest<HTMLElement>('[data-action], [data-hero-icon]');
     const hint = slot && target?.dataset.action === 'hint' ? placeHint(target, slot) : null;
     if (slot) {
@@ -303,14 +313,32 @@ export function startHero(hero: HTMLElement) {
 
   // Compared by event rather than by target: by the time the click bubbles here, a repaint may have detached its target.
   document.addEventListener('click', (event) => {
-    if (event !== heroClick) engine.closeMenus();
+    if (event === heroClick) return;
+    windowsHaveKeyboard = false;
+    engine.closeMenus();
   });
+
+  function openContextMenu(bubble: HTMLElement, clientX: number, clientY: number) {
+    menuPoint = pointInBubble(regions.get('context-menu')!, bubble, clientX, clientY);
+    engine.openContextMenu(bubble.dataset.id!);
+  }
 
   deck.addEventListener('contextmenu', (event) => {
     const bubble = (event.target as HTMLElement).closest<HTMLElement>('[data-own-bubble]');
     if (!bubble) return;
     event.preventDefault();
-    engine.openContextMenu(bubble.dataset.id!);
+    openContextMenu(bubble, event.clientX, event.clientY);
+  });
+
+  function hasTranscriptSelection(): boolean {
+    const selection = getSelection();
+    return !!selection && !selection.isCollapsed && regions.get('timeline')!.contains(selection.anchorNode);
+  }
+
+  // As in Ducko, a click in the Contacts window leaves a selection in the transcript in place, drawn inactive. Cancelling
+  // the mousedown keeps the browser from collapsing it; the deck's pointerdown leaves the selected bubble selectable.
+  contactsSlot.addEventListener('mousedown', (event) => {
+    if (hasTranscriptSelection()) event.preventDefault();
   });
 
   let longPress: ReturnType<typeof setTimeout> | undefined;
@@ -318,9 +346,10 @@ export function startHero(hero: HTMLElement) {
     lastPointerType = event.pointerType;
     const bubble = (event.target as HTMLElement).closest<HTMLElement>('[data-bubble]');
     if (event.pointerType === 'touch') {
-      if (bubble?.hasAttribute('data-own-bubble')) longPress = setTimeout(() => engine.openContextMenu(bubble.dataset.id!), LONG_PRESS_MS);
+      if (bubble?.hasAttribute('data-own-bubble')) longPress = setTimeout(() => openContextMenu(bubble, event.clientX, event.clientY), LONG_PRESS_MS);
       return;
     }
+    if (contactsSlot.contains(event.target as Node) && hasTranscriptSelection()) return;
     // As in Ducko, a message's text is selectable within its own bubble: only the pressed bubble takes a selection.
     if (bubble?.dataset.id === pressedBubbleId) return;
     pressedBubbleId = bubble?.dataset.id;
@@ -345,6 +374,30 @@ export function startHero(hero: HTMLElement) {
     }
   });
 
+  // As in Ducko's table, the arrow keys move the Contacts window's selection while it is key, and Return opens the
+  // selected chat. They do so only while the windows are on screen and the last click landed in one, so elsewhere they
+  // still scroll the page. A focused row makes Contacts key, and Return on it stays with the row's own button.
+  document.addEventListener('keydown', (event) => {
+    const focused = document.activeElement;
+    const onRow = focused instanceof HTMLElement && focused.matches('[data-action="select-row"]');
+    const hasKeyboard = onScreen && (onRow || (focused === document.body && windowsHaveKeyboard));
+    if (!hasKeyboard || event.metaKey || event.altKey || event.ctrlKey) return;
+    const arrow = event.key === 'ArrowDown' || event.key === 'ArrowUp';
+    if (onRow && arrow) engine.setFrontWindow('contacts');
+    const { frontWindow, selectedRowId } = store.getState();
+    if (frontWindow !== 'contacts') return;
+    if (arrow) {
+      engine.selectAdjacentRow(event.key === 'ArrowDown' ? 1 : -1);
+      const selected = store.getState().selectedRowId;
+      if (onRow && selected) focusControl(regions.get('contacts-list')!, 'select-row', selected);
+    } else if (event.key === 'Enter' && !onRow && selectedRowId) {
+      engine.openChat(selectedRowId);
+    } else {
+      return;
+    }
+    event.preventDefault();
+  });
+
   hero.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     const state = store.getState();
@@ -362,6 +415,7 @@ export function startHero(hero: HTMLElement) {
   ambient.setPaused('hidden', document.hidden);
   document.addEventListener('visibilitychange', () => ambient.setPaused('hidden', document.hidden));
   new IntersectionObserver(([entry]) => {
+    onScreen = entry.isIntersecting;
     ambient.setPaused('offscreen', !entry.isIntersecting);
     if (entry.isIntersecting) intro?.start();
   }).observe(deck);
@@ -371,9 +425,9 @@ export function startHero(hero: HTMLElement) {
   const timeline = regions.get('timeline')!;
   new ResizeObserver(() => {
     timeline.scrollTop = 0;
-    placeContextMenu(regions.get('context-menu')!);
+    placeMenu();
   }).observe(timeline);
-  timeline.addEventListener('scroll', () => placeContextMenu(regions.get('context-menu')!));
+  timeline.addEventListener('scroll', () => placeMenu());
 
   const tabs = regions.get('tabs')!;
   // A closed chat window has no tab bar to measure.

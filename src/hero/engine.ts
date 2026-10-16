@@ -145,6 +145,21 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
       update((s) => (s.selectedRowId === id ? s : { ...s, selectedRowId: id }));
     },
 
+    /**
+     * Moves the selection one row down or up across the expanded groups, stopping at the ends, as the arrow keys do in
+     * Ducko's table. With no visible row selected, it starts at the first or last row.
+     */
+    selectAdjacentRow(step: 1 | -1) {
+      update((s) => {
+        const rows = s.groups.flatMap((group) => (group.collapsed ? [] : group.memberIds));
+        const index = s.selectedRowId === null ? -1 : rows.indexOf(s.selectedRowId);
+        let next: string | undefined;
+        if (index === -1) next = rows.at(step === 1 ? 0 : -1);
+        else next = rows[Math.min(Math.max(index + step, 0), rows.length - 1)];
+        return next === undefined || next === s.selectedRowId ? s : { ...s, selectedRowId: next };
+      });
+    },
+
     openChat(id: string) {
       update((s) => activate({ ...withChatTab(s, id), selectedRowId: id }, id));
     },

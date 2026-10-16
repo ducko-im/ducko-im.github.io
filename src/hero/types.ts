@@ -85,6 +85,8 @@ export interface HeroState {
   hint: { anchorId: string } | null;
   duckMode: boolean;
   splash: number;
-  forcedHover: { kind: 'status' | 'tab' | 'bubble'; id: string } | null;
+  forcedHover: { kind: 'status' | 'tab' | 'bubble' | 'lights'; id: string } | null;
+  /** A text selection drawn as markup, for the lab: `start` and `end` are UTF-16 offsets into the message body. */
+  forcedSelection: { messageId: string; start: number; end: number } | null;
   format: { locale: string; timeZone: string };
 }

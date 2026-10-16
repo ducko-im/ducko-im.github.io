@@ -158,6 +158,12 @@
       "description": "The same selection while the chat window is inactive"
     },
     {
+      "id": "chat-text-selected-outgoing",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Part of an outgoing message's text selected in the key chat window"
+    },
+    {
       "id": "chat-me",
       "window": "chat",
       "appearances": ["light", "dark"],

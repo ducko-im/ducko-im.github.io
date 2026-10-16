@@ -78,6 +78,8 @@ describe('stateFor', () => {
     ['chat-context-menu', { menu: { message: 'OUT' } }, { openMenu: null, contextMenu: { messageId: 'OUT' } }],
     ['chat-tab-hover', { tabs: ['lena', 'marco'], hover: { tab: 'marco' } }, { forcedHover: { kind: 'tab', id: 'marco' } }],
     ['chat-bubble-hover', { tabs: ['lena-short'], hover: { message: 'SHORT' } }, { openTabs: ['lena'], forcedHover: { kind: 'bubble', id: 'SHORT' } }],
+    ['contacts-lights-hover', { hover: { trafficLights: true } }, { forcedHover: { kind: 'lights', id: 'contacts' } }],
+    ['chat-text-selected-key', { select: { message: 'IN', range: [4, 7] } }, { forcedSelection: { messageId: 'IN', start: 4, end: 7 } }],
     ['chat-empty', { closeAllTabs: true }, { openTabs: [], activeConversationId: null }],
     ['chat-tabs', { tabs: ['lena', 'marco'] }, { openTabs: ['lena', 'marco'], tabBarWidth: 576 }],
   ])('maps the fields of %s', (id, entry, expected) => {

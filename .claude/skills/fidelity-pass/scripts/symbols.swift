@@ -20,8 +20,11 @@ enum Font {
 }
 
 /// The keys `icon()` accepts, each with its symbol and the font it is drawn in, and where Ducko sets that font. AppKit
-/// draws the two menu glyphs itself; their sizes were matched against the captures.
+/// draws the three traffic-light glyphs and the two menu glyphs itself; their sizes were matched against the captures.
 let table: [(key: String, symbol: String, font: Font)] = [
+    ("xmarkLight", "xmark", .system(9, .black)), // the close button's hover glyph, matched against chat-lights-hover
+    ("minusLight", "minus", .system(9.5, .black)), // the minimize button's hover glyph, matched against chat-lights-hover
+    ("plusLight", "plus", .system(9.5, .black)), // the zoom button's hover glyph, matched against chat-lights-hover
     ("chevronRightGroup", "chevron.right", .system(10, .semibold)), // GroupHeaderRow: caption2, semibold
     ("chevronDownStatus", "chevron.down", .system(8, .semibold)), // StatusBarView
     ("checkmarkMenu", "checkmark", .system(13.25, .regular)), // NSMenu's state mark, matched against contacts-status-menu

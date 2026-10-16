@@ -153,6 +153,19 @@ describe('selectRow, openChat and activateTab', () => {
     expect(state()).toMatchObject({ openTabs: ['lena', 'marco', 'pond-club'], activeConversationId: 'lena', selectedRowId: 'jonas', frontWindow: 'contacts' });
   });
 
+  it('moves the selection through the expanded groups’ rows and stops at the ends', () => {
+    const { engine, state } = setup();
+    engine.toggleGroup('work');
+    engine.selectAdjacentRow(1);
+    engine.selectAdjacentRow(1);
+    expect(state().selectedRowId).toBe('pond-club');
+    engine.selectAdjacentRow(1);
+    expect(state().selectedRowId).toBe('pond-club');
+    engine.selectRow(null);
+    engine.selectAdjacentRow(1);
+    expect(state().selectedRowId).toBe('jonas');
+  });
+
   it('opens one tab for a new conversation and brings the chat window forward', () => {
     const { engine, state } = setup();
     engine.closeChatWindow();

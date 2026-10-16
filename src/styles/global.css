@@ -41,6 +41,7 @@
   --color-accent: var(--mac-accent);
   --color-selection: var(--mac-selection);
   --color-selection-inactive: var(--mac-selection-inactive);
+  --color-text-selection: var(--mac-text-selection);
   --color-bubble-in: var(--mac-bubble-in);
   --color-bubble-in-text: var(--mac-bubble-in-text);
   --color-bubble-out: var(--mac-bubble-out);
@@ -55,6 +56,9 @@
   --color-title-inactive: var(--mac-title-inactive);
   --color-menu: var(--mac-menu);
   --color-menu-separator: var(--mac-menu-separator);
+  --color-light-close-glyph: var(--mac-light-close-glyph);
+  --color-light-minimize-glyph: var(--mac-light-minimize-glyph);
+  --color-light-zoom-glyph: var(--mac-light-zoom-glyph);
 
   --shadow-window: var(--mac-window-shadow);
   --shadow-menu: var(--mac-menu-shadow);
@@ -84,6 +88,7 @@
     --mac-accent: #007aff;
     --mac-selection: #0064e1;
     --mac-selection-inactive: #dcdcdc;
+    --mac-text-selection: #b3d7ff;
     --mac-green: #34c759;
     --mac-yellow: #ffcc00;
     --mac-red: #ff383c;
@@ -94,7 +99,7 @@
     --mac-titlebar-separator: #e5e5e5;
     --mac-title: #595959;
     --mac-title-inactive: #b8b8b8;
-    /* Traffic lights: a fill gradient, and an edge drawn as a box-shadow */
+    /* Traffic lights: a fill gradient, an edge drawn as a box-shadow, and the glyph the pointer reveals */
     --mac-light-close: linear-gradient(#f86b62, #f68f88);
     --mac-light-close-edge: inset 0 0 0 0.5px #d2463f;
     --mac-light-minimize: linear-gradient(#fcbb2a, #fecf40);
@@ -103,6 +108,9 @@
     --mac-light-zoom-edge: inset 0 0 0 0.5px #3fa323;
     --mac-light-inactive: linear-gradient(#f5f6f7, #eff0f1);
     --mac-light-inactive-edge: inset 0 0 0 0.5px #aaabb0;
+    --mac-light-close-glyph: #a30000;
+    --mac-light-minimize-glyph: #c14500;
+    --mac-light-zoom-glyph: #368800;
     --mac-menu: rgb(255 255 255 / 0.7);
     --mac-menu-separator: rgb(0 0 0 / 0.13);
     --mac-window-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.22), 0 30px 80px -10px rgb(0 0 0 / 0.45), 0 10px 24px -8px rgb(0 0 0 / 0.25);
@@ -123,6 +131,7 @@
       --mac-accent: #0a84ff;
       --mac-selection: #0058d0;
       --mac-selection-inactive: #464646;
+      --mac-text-selection: #3f638b;
       --mac-green: #30d158;
       --mac-yellow: #ffd600;
       --mac-red: #ff4245;
@@ -141,6 +150,9 @@
       --mac-light-zoom-edge: inset 0 0.5px 0 #aff58f, inset 0 -0.5px 0 #a7f68d;
       --mac-light-inactive: linear-gradient(#535353, #4c4c4c);
       --mac-light-inactive-edge: inset 0 0.5px 0 #b4b4b4, inset 0 -0.5px 0 #adadad;
+      --mac-light-close-glyph: #8c0000;
+      --mac-light-minimize-glyph: #a63a00;
+      --mac-light-zoom-glyph: #2e7300;
       --mac-menu: rgb(96 96 96 / 0.49);
       --mac-menu-separator: rgb(255 255 255 / 0.18);
       --mac-window-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.18), 0 30px 90px -10px rgb(0 0 0 / 0.8), 0 0 60px -10px rgb(0 166 244 / 0.25);

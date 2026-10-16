@@ -57,6 +57,7 @@ Allowed edits:
 - classes and markup in `src/hero/view/*.ts`
 - the icon table in [symbols.swift](scripts/symbols.swift), never the `src/hero/view/symbols.ts` it generates
 - the badge in `src/components/DockIcon.astro`, which the live hero shares
+- `src/hero/placement.ts`, for a menu's lift and the position it takes when no pointer opened it, as in the lab
 - `src/hero/fixtures.ts` and `types.ts`, only to map `content.json` fields; a difference in what a state shows goes to the ducko repo's `content.json` and a recapture
 - `src/hero/data.ts`, for the live hero's own roster and copy
 - `WINDOW_SIZES`, only under Step 4's size condition, or its Contacts height when a tuned metric or the live roster changes the whole roster's height
@@ -87,6 +88,7 @@ Read the `zoom` image for shapes and glyphs, and `boxes`, `scan` and `color` for
 - Sample system colors from the captures. macOS changes them between releases.
 - After changing the height of anything above the Contacts list (the title bar and divider in `chrome.ts`, which the chat window shares, or the status header), a group header or a row, update the matching height constant at the top of `src/hero/view/contacts.ts`, or the live window clips or scrolls its list. `pnpm test` then fails until `WINDOW_SIZES.contacts.height` and the row height in that test match again. A changed title bar height also moves the status menu's `top` offset in `renderStatusMenu`.
 - Judge a menu's fill only where it lies over its window. Past the window edge, the captured glass shows the capture VM's wallpaper.
+- The captures open a menu that appears at the pointer, such as the message context menu, at a fixed position, here the bubble's center. Keep that position the lab's default only, and let the live hero follow the visitor's pointer as the app does, so matching a capture never changes how the live hero responds.
 - Bring anything the web cannot reproduce, such as glass or vibrancy, to Step 6 as an open deviation instead of tuning it further.
 
 After each region, screenshot the `/lab/` overview in Chromium and read it, along with the affected states in overlay. The overview is many screens tall: take it with `agent-browser screenshot --full` at a wide viewport and split the image into screen-sized parts to read it. Keep `pnpm test` green.
@@ -114,6 +116,7 @@ Ask Tobias for two checks in Safari:
 - A Digital Color Meter check, set to sRGB, in side-by-side mode, in both appearances, within ±2 per channel. The color set:
   - incoming and outgoing bubbles
   - row selection, key and inactive
+  - text selection highlight, key
   - selected tab fill
   - separator
   - window background and title bar

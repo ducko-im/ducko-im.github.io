@@ -21,14 +21,13 @@ These are the accepted differences from the real app. Any other difference the l
 - **Traffic-light gloss.** A two-stop gradient and an edge stand in for macOS's radial gloss and halo.
 - **Menu glass tint.** Over colored content, such as a blue bubble, the app's glass tints more strongly than the web's translucent, blurred fill.
 - **Text rasterization.** AppKit draws text slightly heavier than browsers, and pixel snapping leaves offsets of up to 1 pt.
-- **Icon snapping.** Browsers snap an SVG to whole CSS pixels, so some icons sit 0.5 pt off the capture. The chat header's icons, the delivery checks and the group chevrons are off vertically. The room header's icons and the status chevron are off horizontally.
+- **Icon snapping.** Browsers snap an SVG to whole CSS pixels, so some icons sit 0.5 pt off the capture. The chat header's icons, the delivery checks and the group chevrons are off vertically. The room header's icons, the status chevron and the close button's hover glyph are off horizontally.
+- **Selection highlight.** The highlight behind selected message text sits 0.5 pt below the capture's, because the browser draws it on whole CSS pixels.
 - **Menu checkmark.** NSMenu draws its own state mark. The status menu shows the closest SF Symbol from the table in `symbols.swift`, which has its shape but not its exact pixels.
 - **Room nickname colors.** Ducko draws every room nickname gray, a bug in its HSLuv conversion that the captures and the lab's fixtures show. The live hero keeps the colors Ducko intends. Once the app is fixed and recaptured, recompute `OCCUPANT_COLORS` in `src/hero/fixtures.ts` and drop this entry.
 - **Roster while offline.** Ducko empties the contact list while your own status is Offline. The hero keeps it gray, since its intro builds up from a gray roster.
 
 ## Not yet compared
-
-The six traffic-light hover and text-selection states (`*-lights-hover`, `chat-text-selected-*`) aren't imported and tuned yet. Until they are, the traffic lights show no hover glyphs and the selection highlight is the browser's.
 
 No motion is compared yet, because the ducko repo's reference mode can't record clips. `motion.json` lists the clips to record.
 

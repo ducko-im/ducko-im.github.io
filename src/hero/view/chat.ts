@@ -3,7 +3,7 @@ import { ME } from '../data';
 import { groupMessages, type TimelineRow } from '../grouping';
 import { partitionTabs, visibleTabCount } from '../tabs';
 import type { Conversation, HeroState, Message } from '../types';
-import { divider, titlebar, windowClass } from './chrome';
+import { divider, isKey, titlebar, windowClass } from './chrome';
 import { escapeHtml } from './escape';
 import { formatDay, formatMinutesAgo, formatTime } from './format';
 import { icon } from './icons';
@@ -112,12 +112,31 @@ export function renderContextMenu(state: HeroState): string {
   </div>`;
 }
 
+/**
+ * The colors of selected text, as AppKit highlights it: tinted in a key window, gray in an inactive one. `live` styles
+ * the browser's selection, and `forced` draws the lab's forced selection as markup.
+ */
+function selectionColors(state: HeroState): { live: string; forced: string } {
+  if (isKey(state, 'chat')) return { live: tw`selection:bg-text-selection`, forced: tw`bg-text-selection` };
+  return { live: tw`selection:bg-selection-inactive`, forced: tw`bg-selection-inactive` };
+}
+
+/** The body, with the lab's forced selection wrapped in a highlighted span. */
+function bodyText(state: HeroState, message: Message): string {
+  const selection = state.forcedSelection?.messageId === message.id ? state.forcedSelection : null;
+  if (!selection) return messageText(message.body);
+  const before = messageText(message.body.slice(0, selection.start));
+  const selected = messageText(message.body.slice(selection.start, selection.end));
+  const after = messageText(message.body.slice(selection.end));
+  return `${before}<span class="${selectionColors(state).forced}">${selected}</span>${after}`;
+}
+
 function renderBubble(state: HeroState, conversation: Conversation, row: TimelineRow): string {
   const { message } = row;
   const outgoing = message.direction === 'out';
   const body = message.action
     ? `<em>* ${escapeHtml(senderName(state, conversation, message))} ${messageText(message.body.slice(ACTION_PREFIX.length))}</em>`
-    : messageText(message.body);
+    : bodyText(state, message);
   const participant =
     conversation.kind === 'room' && !outgoing ? state.rooms[conversation.id].participants.find((p) => p.nickname === message.sender) : undefined;
   const nickname = participant
@@ -159,7 +178,7 @@ export function renderTimeline(state: HeroState): string {
   const rows = groupMessages(conversation.messages, state.format.timeZone)
     .map((row) => renderRow(state, conversation, row))
     .join('');
-  return `<div class="${tw`pb-[9px]`}">${rows}</div>`;
+  return `<div class="${tw`pb-[9px]`} ${selectionColors(state).live}">${rows}</div>`;
 }
 
 export function renderComposer(state: HeroState): string {

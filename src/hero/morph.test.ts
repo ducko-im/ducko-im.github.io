@@ -13,10 +13,16 @@ describe('morph', () => {
     const target = container('<p>Day</p><div data-key="a" class="first">Hello</div>');
     const day = target.firstChild;
     const hello = target.querySelector('[data-key="a"]')!.firstChild;
-    morph(target, '<p>Day</p><div data-key="a" class="last">Hello</div><div data-key="b">Hi</div>', 'data-key');
+    expect(morph(target, '<p>Day</p><div data-key="a" class="last">Hello</div><div data-key="b">Hi</div>', 'data-key')).toBe(true);
     expect(target.innerHTML).toBe('<p>Day</p><div data-key="a" class="last">Hello</div><div data-key="b">Hi</div>');
     expect(target.firstChild).toBe(day);
     expect(target.querySelector('[data-key="a"]')!.firstChild).toBe(hello);
+  });
+
+  it('reports a change of attributes alone as no change of content', () => {
+    const target = container('<div data-key="a" class="first">Hello</div>');
+    expect(morph(target, '<div data-key="a" class="last">Hello</div>', 'data-key')).toBe(false);
+    expect(target.innerHTML).toBe('<div data-key="a" class="last">Hello</div>');
   });
 
   it('replaces rows whose key no longer lines up and drops the rest', () => {

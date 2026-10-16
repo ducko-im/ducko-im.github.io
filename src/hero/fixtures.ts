@@ -37,7 +37,8 @@ interface ContentState {
   typing?: string[];
   input?: string | null;
   editing?: string | null;
-  hover?: { statusPicker?: boolean; tab?: string; message?: string } | null;
+  hover?: { statusPicker?: boolean; tab?: string; message?: string; trafficLights?: boolean } | null;
+  select?: { message: string; range: [number, number] } | null;
   menu?: 'status' | { message: string } | null;
 }
 
@@ -66,6 +67,7 @@ const DEFAULTS: Required<Omit<ContentState, 'key'>> = {
   input: null,
   editing: null,
   hover: null,
+  select: null,
   menu: null,
 };
 
@@ -184,11 +186,13 @@ export function stateFor(id: string, content: Content, chatWidth: number): HeroS
   if (active && spec.input) active.composer.draft = spec.input;
   if (active && spec.editing) active.composer = { draft: activeMessage(spec.editing).body, editingMessageId: spec.editing };
 
-  const { hover, menu } = spec;
+  const { hover, select, menu } = spec;
   let forcedHover: HeroState['forcedHover'] = null;
   if (hover?.statusPicker) forcedHover = { kind: 'status', id: 'own' };
   else if (hover?.tab) forcedHover = { kind: 'tab', id: peer(hover.tab).id };
   else if (hover?.message) forcedHover = { kind: 'bubble', id: activeMessage(hover.message).id };
+  else if (hover?.trafficLights) forcedHover = { kind: 'lights', id: manifestState.window };
+  const forcedSelection = select ? { messageId: activeMessage(select.message).id, start: select.range[0], end: select.range[1] } : null;
 
   return {
     ...base,
@@ -209,5 +213,6 @@ export function stateFor(id: string, content: Content, chatWidth: number): HeroS
     openMenu: menu === 'status' ? 'status' : null,
     contextMenu: menu && menu !== 'status' ? { messageId: activeMessage(menu.message).id } : null,
     forcedHover,
+    forcedSelection,
   };
 }
