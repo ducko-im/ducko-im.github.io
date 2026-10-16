@@ -238,13 +238,12 @@
 
   /*
    * The two hero windows: side by side and scaled to fit on wider screens, a tap-to-front deck on phones. Hero.astro sets
-   * --contacts-w/-h and --chat-w/-h from WINDOW_SIZES.
+   * --contacts-w and --chat-w/-h from WINDOW_SIZES, and --contacts-h to the whole roster's height.
    */
   .hero {
     --window-gap: 20px;
     --chat-top: 52px;
     --hero-frame-w: calc(var(--contacts-w) + var(--window-gap) + var(--chat-w));
-    --hero-frame-h: max(var(--contacts-h), calc(var(--chat-top) + var(--chat-h)));
     --hero-scale-w: 1;
     --hero-scale-h: 1;
     --hero-scale: min(var(--hero-scale-w), var(--hero-scale-h));
@@ -277,6 +276,7 @@
   }
 
   .hero-windows-outer {
+    --hero-frame-h: max(var(--contacts-h), calc(var(--chat-top) + var(--chat-h)));
     width: calc(var(--hero-frame-w) * var(--hero-scale));
     height: calc(var(--hero-frame-h) * var(--hero-scale));
   }
@@ -322,13 +322,13 @@
 
   @variant max-desk {
     .hero-windows-outer {
+      --chat-h: 460px;
       width: auto;
       height: auto;
     }
 
     .hero-windows {
       width: auto;
-      height: 520px;
       transform: none;
     }
 
@@ -345,7 +345,6 @@
       &[data-slot='chat'] {
         left: 22px;
         width: calc(100% - 22px);
-        height: 460px;
       }
     }
 

@@ -2,9 +2,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import manifest from '../../../reference/states.json';
-import { WINDOW_SIZES } from '../../hero/data';
+import { WINDOW_SIZES, initialState } from '../../hero/data';
 import { CONTENT_VERSION, type Content, stateFor } from '../../hero/fixtures';
 import type { HeroState, HeroWindow } from '../../hero/types';
+import { rosterHeight } from '../../hero/view/contacts';
 
 export type Appearance = 'light' | 'dark';
 export type LabWindow = HeroWindow | 'dock';
@@ -131,8 +132,14 @@ function artwork(tile: Rect): Rect {
   return { x: tile.x + inset, y: tile.y + inset, width: tile.width - 2 * inset, height: tile.height - 2 * inset };
 }
 
+function defaultSize(window: LabWindow): Size {
+  if (window === 'dock') return { width: DOCK_TILE, height: DOCK_TILE };
+  if (window === 'contacts') return { width: WINDOW_SIZES.contacts.width, height: rosterHeight(initialState()) };
+  return WINDOW_SIZES.chat;
+}
+
 function layoutFor(window: LabWindow, capture: Capture | null): Layout {
-  const size = capture?.size ?? (window === 'dock' ? { width: DOCK_TILE, height: DOCK_TILE } : WINDOW_SIZES[window]);
+  const size = capture?.size ?? defaultSize(window);
   const rects = [{ x: 0, y: 0, ...size }, ...(capture?.layers.map((layer) => layer.rect) ?? [])];
   const left = Math.min(...rects.map((r) => r.x));
   const top = Math.min(...rects.map((r) => r.y));

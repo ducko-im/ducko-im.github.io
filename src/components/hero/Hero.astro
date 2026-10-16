@@ -2,7 +2,7 @@
 import { site } from '../../data/site';
 import { WINDOW_SIZES, initialState } from '../../hero/data';
 import { renderChatWindow } from '../../hero/view/chat';
-import { renderContactsWindow } from '../../hero/view/contacts';
+import { renderContactsWindow, rosterHeight } from '../../hero/view/contacts';
 import { totalUnread } from '../../hero/view/shared';
 import { getLatestRelease } from '../../lib/release';
 import DockIcon from '../DockIcon.astro';
@@ -13,7 +13,7 @@ const release = await getLatestRelease();
 const state = initialState();
 const unread = totalUnread(state);
 const { contacts, chat } = WINDOW_SIZES;
-const windowSizes = `--contacts-w:${contacts.width}px;--contacts-h:${contacts.height}px;--chat-w:${chat.width}px;--chat-h:${chat.height}px`;
+const windowSizes = `--contacts-w:${contacts.width}px;--contacts-h:${rosterHeight(state)}px;--chat-w:${chat.width}px;--chat-h:${chat.height}px`;
 ---
 
 <main class="hero relative isolate flex min-h-svh flex-col overflow-hidden text-white dark:text-sky-100" style={windowSizes} data-hero>
@@ -57,7 +57,7 @@ const windowSizes = `--contacts-w:${contacts.width}px;--contacts-h:${contacts.he
       </p>
     </section>
 
-    <section aria-label="Interactive Ducko demo" data-windows-frame class="relative mt-9 lg:mt-0 lg:h-full lg:min-h-0 lg:self-stretch">
+    <section aria-label="Interactive Ducko demo" data-windows-frame class="max-desk:mb-3 relative mt-9 lg:mt-0 lg:h-full lg:min-h-0 lg:self-stretch">
       <div class="hero-windows-outer desk:mx-auto lg:absolute lg:top-1/2 lg:left-1/2 lg:-translate-1/2">
         <div class="hero-windows windows-reflection rise-in" data-front={state.frontWindow} data-windows style="animation-delay: 150ms">
           <div class="hero-slot" data-slot="contacts">

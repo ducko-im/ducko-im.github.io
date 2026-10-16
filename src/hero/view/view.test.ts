@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { FIXTURE_NOW, WINDOW_SIZES, initialState } from '../data';
+import { FIXTURE_NOW, initialState } from '../data';
 import type { HeroState, MessageStatus } from '../types';
 import { renderChatHeader, renderChatWindow, renderComposer, renderTabs, renderTimeline } from './chat';
-import { contactsWindowHeight, renderContactsList, renderContactsWindow } from './contacts';
+import { contactsWindowHeight, renderContactsList, renderContactsWindow, rosterHeight } from './contacts';
 import { escapeHtml } from './escape';
 import { formatTime } from './format';
 import { messageText } from './shared';
@@ -77,9 +77,14 @@ describe('renderContactsWindow', () => {
 });
 
 describe('contactsWindowHeight', () => {
-  it('fits the whole roster to the reserved height and drops a collapsed group’s rows', () => {
-    expect(contactsWindowHeight(state())).toBe(WINDOW_SIZES.contacts.height);
-    expect(contactsWindowHeight(state((s) => (s.groups[1].collapsed = true)))).toBe(WINDOW_SIZES.contacts.height - 2 * 40);
+  it('drops a collapsed group’s rows', () => {
+    expect(contactsWindowHeight(state((s) => (s.groups[1].collapsed = true)))).toBe(contactsWindowHeight(state()) - 2 * 40);
+  });
+});
+
+describe('rosterHeight', () => {
+  it('counts a collapsed group’s rows', () => {
+    expect(rosterHeight(state((s) => (s.groups[1].collapsed = true)))).toBe(contactsWindowHeight(state()));
   });
 });
 

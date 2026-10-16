@@ -35,7 +35,7 @@ Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden 
 
 Diese Website erhebt und verarbeitet keine personenbezogenen Daten. Es werden keine Cookies, Analyse-Tools oder Tracking-Dienste eingesetzt, und Ihr Browser stellt beim Besuch keine Anfragen an Server Dritter. Die Schriften werden von dieser Website selbst ausgeliefert.
 
-Die technische Bereitstellung erfolgt über GitHub Pages (GitHub Inc.) hinter Cloudflare (Cloudflare Inc.). Diese Anbieter können für den Betrieb erforderliche technische Daten (z.B. IP-Adressen, Zugriffsdaten) in ihren Server-Logs verarbeiten. Weitere Informationen dazu finden Sie in den jeweiligen Datenschutzerklärungen der Anbieter.
+Die technische Bereitstellung erfolgt über GitHub Pages (GitHub Inc.). Dieser Anbieter kann für den Betrieb erforderliche technische Daten (z.B. IP-Adressen, Zugriffsdaten) in seinen Server-Logs verarbeiten. Weitere Informationen dazu finden Sie in der Datenschutzerklärung des Anbieters.
 
 ## Widerspruch Werbe-Mails
 

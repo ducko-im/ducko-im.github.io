@@ -7,7 +7,7 @@ export const DUCK_AVATAR: Avatar = ME.avatar;
 
 export const EMPTY_COMPOSER: Composer = { draft: '', editingMessageId: null };
 
-export const WINDOW_SIZES = { contacts: { width: 200, height: 395 }, chat: { width: 500, height: 450 } };
+export const WINDOW_SIZES = { contacts: { width: 200 }, chat: { width: 500, height: 450 } };
 
 export const DESKTOP_TAB_BAR_WIDTH = WINDOW_SIZES.chat.width - 2 * TAB_BAR_INSET;
 
@@ -22,11 +22,18 @@ export const PRESENCE_LABELS: Record<Presence, string> = {
   offline: 'Offline',
 };
 
-function contact(id: string, name: string, presence: Presence, status: string | null, avatar: Avatar, lastSeen: string | null = null): Contact {
+function contact<Id extends string>(
+  id: Id,
+  name: string,
+  presence: Presence,
+  status: string | null,
+  avatar: Avatar,
+  lastSeen: string | null = null,
+): Contact & { id: Id } {
   return { id, name, presence, status, lastSeen, avatar };
 }
 
-const CONTACTS: Contact[] = [
+const CONTACTS = [
   contact('lena', 'Lena Fischer', 'available', 'Feeding the ducks', { emoji: '🦊', gradient: ['rgb(252 204 158)', 'rgb(250 158 107)'] }),
   contact('jonas', 'Jonas Weber', 'away', 'At the gym', { emoji: '🐼', gradient: ['rgb(189 230 204)', 'rgb(120 199 163)'] }),
   contact('noah', 'Noah Becker', 'offline', null, {}, '2 hours ago'),
@@ -40,17 +47,20 @@ const PARTICIPANTS: Participant[] = [
   { nickname: 'Ole', color: { light: '#b85c00', dark: '#ec8a3f' } },
 ];
 
-const ROOMS: Room[] = [{ id: 'pond-club', name: 'Pond Club', subject: 'Peas, not bread 🫛', participants: PARTICIPANTS }];
+const ROOMS = [{ id: 'pond-club', name: 'Pond Club', subject: 'Peas, not bread 🫛', participants: PARTICIPANTS }] as const satisfies readonly Room[];
 
-const GROUPS: Group[] = [
+type ContactId = (typeof CONTACTS)[number]['id'];
+type ConversationId = ContactId | (typeof ROOMS)[number]['id'];
+
+const GROUPS = [
   { id: 'friends', name: 'Friends', kind: 'contacts', memberIds: ['jonas', 'lena', 'noah'], collapsed: false },
   { id: 'work', name: 'Work', kind: 'contacts', memberIds: ['marco', 'priya'], collapsed: false },
   { id: 'rooms', name: 'Rooms', kind: 'rooms', memberIds: ['pond-club'], collapsed: false },
-];
+] satisfies (Group & { memberIds: ConversationId[] })[];
 
 type Seed = [direction: 'in' | 'out', secondsAgo: number, body: string, sender?: string];
 
-const SEEDS: Record<string, Seed[]> = {
+const SEEDS: Partial<Record<ConversationId, Seed[]>> = {
   lena: [
     ['in', 1580, 'Meeting at the pond at six. Are you in? 🦆'],
     ['out', 1488, "Sounds good! I'll bring coffee ☕️"],
@@ -76,7 +86,7 @@ export const REPLIES: Record<string, string[]> = {
   noah: ["Sorry, just saw this. What's up?", 'Back online!'],
   priya: ['Surfacing soon, promise 🦉', 'Noted. Back after 3.', 'Thanks, will check later.'],
   marco: ['Approved ✅', 'Good catch, fixing it now.', 'Let me look after this review.'],
-};
+} satisfies Record<ContactId, string[]>;
 
 export const ROOM_LINES = [
   'Agreed!',
@@ -114,7 +124,7 @@ export function newMessageId(): string {
   return `m${nextMessageId}`;
 }
 
-function seedMessages(id: string, now: number): Message[] {
+function seedMessages(id: ConversationId, now: number): Message[] {
   return (SEEDS[id] ?? []).map(([direction, secondsAgo, body, sender]) => ({
     id: `${id}-${secondsAgo}`,
     direction,
@@ -127,7 +137,7 @@ function seedMessages(id: string, now: number): Message[] {
   }));
 }
 
-function conversation(id: string, kind: Conversation['kind'], now: number, unread = 0): Conversation {
+function conversation(id: ConversationId, kind: Conversation['kind'], now: number, unread = 0): Conversation {
   return { id, kind, messages: seedMessages(id, now), unread, typing: false, composer: { ...EMPTY_COMPOSER }, pendingReply: null };
 }
 
@@ -141,10 +151,10 @@ export function initialState(now = Date.now(), format: HeroState['format'] = { l
     groups: GROUPS,
     rooms: Object.fromEntries(ROOMS.map((r) => [r.id, r])),
     conversations,
-    openTabs: ['lena', 'marco', 'pond-club'],
-    activeConversationId: 'lena',
+    openTabs: ['lena', 'marco', 'pond-club'] satisfies ConversationId[],
+    activeConversationId: 'lena' satisfies ConversationId,
     tabBarWidth: DESKTOP_TAB_BAR_WIDTH,
-    selectedRowId: 'lena',
+    selectedRowId: 'lena' satisfies ConversationId,
     chatWindowOpen: true,
     frontWindow: 'chat',
     openMenu: null,

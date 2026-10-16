@@ -126,6 +126,11 @@ export function contactsWindowHeight(state: HeroState): number {
   return HEADER_HEIGHT + list;
 }
 
+/** The whole roster's height, which the hero reserves so that collapsing a group never moves the rest of the page. */
+export function rosterHeight(state: HeroState): number {
+  return contactsWindowHeight({ ...state, groups: state.groups.map((group) => ({ ...group, collapsed: false })) });
+}
+
 export function renderContactsWindow(state: HeroState): string {
   return `<div data-window="contacts" class="${windowClass}">
     ${titlebar(state, 'contacts')}

@@ -43,7 +43,7 @@ Start `pnpm dev` (port 13269), or reuse the server this session already started,
 Then run each of these that applies:
 
 - **The panel reports an unsupported `content.json` version.** Rework `stateFor` in `src/hero/fixtures.ts` for the new contract (the `content.json` table in the ducko skill) and raise `CONTENT_VERSION`.
-- **The `contacts-key` capture's width, or the `chat-key` capture's width or height, differs from `WINDOW_SIZES` in `src/hero/data.ts`** (compare the `size` in `capture.json`, in points). Adopt the widths and the chat height. The Contacts height is not taken from the capture: the hero fits it to its own roster with `contactsWindowHeight` in `src/hero/view/contacts.ts`, and `WINDOW_SIZES.contacts.height` holds the whole roster's height, which `pnpm test` checks. Then run the live-page check from Step 5.
+- **The `contacts-key` capture's width, or the `chat-key` capture's width or height, differs from `WINDOW_SIZES` in `src/hero/data.ts`** (compare the `size` in `capture.json`, in points). Adopt the widths and the chat height. The Contacts height is not taken from the capture: the hero fits it to its own roster with `contactsWindowHeight` in `src/hero/view/contacts.ts`. Then run the live-page check from Step 5.
 
 A state whose content no longer resolves shows its error on its `/lab/` card instead of a window. Fix the mapping in `stateFor`, or the ducko repo's `content.json` when the error names a time zone or a missing state entry.
 
@@ -60,7 +60,7 @@ Allowed edits:
 - `src/hero/placement.ts`, for a menu's lift and the position it takes when no pointer opened it, as in the lab
 - `src/hero/fixtures.ts` and `types.ts`, only to map `content.json` fields; a difference in what a state shows goes to the ducko repo's `content.json` and a recapture
 - `src/hero/data.ts`, for the live hero's own roster and copy
-- `WINDOW_SIZES`, only under Step 4's size condition, or its Contacts height when a tuned metric or the live roster changes the whole roster's height
+- `WINDOW_SIZES`, only under Step 4's size condition
 
 The icons are SF Symbols exported from this Mac. Each table entry names the symbol and the text style or size and weight Ducko's view sets for it. After changing the table, run `swift .claude/skills/fidelity-pass/scripts/symbols.swift src/hero/view/symbols.ts`, then `pnpm format`. The export follows the captures only when this Mac runs the macOS release `capture.json` records, which the generated file's header names. Rerun it once a recapture and this Mac are on the same new release, and leave `symbols.ts` as it is while they differ. AppKit draws some glyphs itself, such as a menu's indicator. Render candidates for one with `swift .claude/skills/fidelity-pass/scripts/symbols.swift --png <work>/candidates <symbol> <point-size> <weight>`, enter the closest in the table, and bring what still differs to Step 6.
 
@@ -86,7 +86,7 @@ Read the `zoom` image for shapes and glyphs, and `boxes`, `scan` and `color` for
 - Browsers snap text and SVGs to whole CSS pixels, so a 0.5 pt nudge lands 0 or 1 pt away. Leave residuals of 0.5 pt.
 - Fractional border widths don't draw as written: borders of 1.25, 1.5 and 1.75 px all measured like 1 px in the 2x screenshots. For a stroke weight in between, draw the stroke as an inset ring (`inset-ring-[1.5px]`), which is a box-shadow and draws at its written width.
 - Sample system colors from the captures. macOS changes them between releases.
-- After changing the height of anything above the Contacts list (the title bar and divider in `chrome.ts`, which the chat window shares, or the status header), a group header or a row, update the matching height constant at the top of `src/hero/view/contacts.ts`, or the live window clips or scrolls its list. `pnpm test` then fails until `WINDOW_SIZES.contacts.height` and the row height in that test match again. A changed title bar height also moves the status menu's `top` offset in `renderStatusMenu`.
+- After changing the height of anything above the Contacts list (the title bar and divider in `chrome.ts`, which the chat window shares, or the status header), a group header or a row, update the matching height constant at the top of `src/hero/view/contacts.ts`, or the live window clips or scrolls its list. A changed row height fails `pnpm test` until the row height in the `contactsWindowHeight` test matches again. A changed title bar height also moves the status menu's `top` offset in `renderStatusMenu`.
 - Judge a menu's fill only where it lies over its window. Past the window edge, the captured glass shows the capture VM's wallpaper.
 - The captures open a menu that appears at the pointer, such as the message context menu, at a fixed position, here the bubble's center. Keep that position the lab's default only, and let the live hero follow the visitor's pointer as the app does, so matching a capture never changes how the live hero responds.
 - Bring anything the web cannot reproduce, such as glass or vibrancy, to Step 6 as an open deviation instead of tuning it further.

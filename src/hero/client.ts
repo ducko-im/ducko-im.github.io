@@ -278,9 +278,11 @@ export function startHero(hero: HTMLElement) {
         engine.startEdit(id);
         return input.focus();
       case 'cancel-edit':
-        return state.activeConversationId && engine.cancelEdit(state.activeConversationId);
+        if (state.activeConversationId) engine.cancelEdit(state.activeConversationId);
+        return input.focus();
       case 'send':
-        return send();
+        send();
+        return input.focus();
       case 'poke':
         engine.pokeDuck();
         return animate(target.querySelector('[data-avatar]'), 'wiggle');
@@ -437,11 +439,9 @@ export function startHero(hero: HTMLElement) {
 
   // Side by side, the grid sets the frame's width and height, so both bound the scale. Stacked, the frame's height follows the windows, so only its width does.
   function fit() {
-    const widthScale = frame.clientWidth / deck.offsetWidth;
-    let scale = Math.min(1, widthScale, frame.clientHeight / deck.offsetHeight);
-    if (matchMedia('(width < 64rem)').matches) scale = Math.min(1, widthScale);
-    if (matchMedia('(width < 43.75rem)').matches) scale = 1;
-    hero.style.setProperty('--hero-scale', String(scale));
+    const sideBySide = getComputedStyle(frame.parentElement!).display === 'grid';
+    const heightScale = sideBySide ? frame.clientHeight / deck.offsetHeight : 1;
+    hero.style.setProperty('--hero-scale', String(Math.min(1, frame.clientWidth / deck.offsetWidth, heightScale)));
   }
   new ResizeObserver(fit).observe(frame);
   addEventListener('resize', fit);
