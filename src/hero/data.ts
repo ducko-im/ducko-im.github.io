@@ -145,6 +145,7 @@ export function initialState(now = Date.now(), format: HeroState['format'] = { l
     activeConversationId: 'lena',
     tabBarWidth: DESKTOP_TAB_BAR_WIDTH,
     selectedRowId: 'lena',
+    chatWindowOpen: true,
     frontWindow: 'chat',
     openMenu: null,
     contextMenu: null,

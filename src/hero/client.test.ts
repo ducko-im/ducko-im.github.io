@@ -45,7 +45,7 @@ function mount({ reducedMotion = false } = {}) {
     $,
     input: $<HTMLTextAreaElement>('[data-composer-input]'),
     messageCount: () => $('[data-region="timeline"]').querySelectorAll('[data-message-id]').length,
-    marcoUnread: () => $('[data-tab="marco"]').querySelector('[data-unread]'),
+    priyaUnread: () => hero.querySelector('[data-tab="priya"] [data-unread]'),
     resize: (element: Element) => resizeCallbacks.get(element)!(),
   };
 }
@@ -59,6 +59,14 @@ function layout(element: HTMLElement, rect: { left: number; top: number; width: 
 function type(input: HTMLTextAreaElement, text: string) {
   input.value = text;
   input.dispatchEvent(new Event('input'));
+}
+
+function click(target: HTMLElement, init: MouseEventInit = {}) {
+  target.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1, ...init }));
+}
+
+function pointerDown(target: HTMLElement, pointerType: string) {
+  target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }));
 }
 
 function press(target: HTMLElement, key: string, init: KeyboardEventInit = {}) {
@@ -152,6 +160,79 @@ describe('clicks', () => {
     Object.defineProperty(tabs, 'clientWidth', { value: 290 });
     resize(tabs);
     expect(tabs.querySelector('[data-action="overflow-menu"]')).not.toBeNull();
+  });
+});
+
+describe('windows', () => {
+  const jonas = '[data-action="select-row"][data-id="jonas"]';
+
+  it('selects a contact on a click, keeping Contacts key, and opens its chat on a double-click', () => {
+    const { $ } = mount({ reducedMotion: true });
+    click($(jonas));
+    expect($('[data-windows]').dataset.front).toBe('contacts');
+    expect($(jonas).getAttribute('aria-pressed')).toBe('true');
+    expect($('[data-tab="jonas"]')).toBeNull();
+    click($(jonas), { detail: 2 });
+    expect($('[data-windows]').dataset.front).toBe('chat');
+    expect($('[data-tab="jonas"]')).not.toBeNull();
+  });
+
+  it('deselects the selected contact on a Command-click, and selects another', () => {
+    const { $ } = mount({ reducedMotion: true });
+    const lena = '[data-action="select-row"][data-id="lena"]';
+    click($(lena), { metaKey: true });
+    expect($(lena).getAttribute('aria-pressed')).toBe('false');
+    click($(jonas), { metaKey: true });
+    expect($(jonas).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps a focused row focused when selecting it repaints the roster', () => {
+    const { $ } = mount({ reducedMotion: true });
+    $(jonas).focus();
+    click($(jonas));
+    expect(document.activeElement).toBe($(jonas));
+  });
+
+  it('opens a chat on a tap', () => {
+    const { $ } = mount({ reducedMotion: true });
+    pointerDown($(jonas), 'touch');
+    click($(jonas));
+    expect($('[data-windows]').dataset.front).toBe('chat');
+    expect($('[data-tab="jonas"]')).not.toBeNull();
+  });
+
+  it('closes the chat window, blurring its input, and brings it back with its tabs', () => {
+    const { $, input } = mount({ reducedMotion: true });
+    input.focus();
+    $('[data-action="close-chat-window"]').click();
+    expect($('[data-slot="chat"]').hidden).toBe(true);
+    expect($('[data-windows]').dataset.front).toBe('contacts');
+    expect(document.activeElement).not.toBe(input);
+    click($(jonas), { detail: 2 });
+    expect($('[data-slot="chat"]').hidden).toBe(false);
+    expect($('[data-tab="lena"]')).not.toBeNull();
+  });
+});
+
+describe('the transcript', () => {
+  it('lets only the pressed bubble take a text selection', () => {
+    const { $ } = mount({ reducedMotion: true });
+    const [first, second] = $('[data-region="timeline"]').querySelectorAll<HTMLElement>('[data-bubble]');
+    pointerDown(first, 'mouse');
+    pointerDown(second, 'mouse');
+    expect(first.classList.contains('select-text')).toBe(false);
+    expect(second.classList.contains('select-text')).toBe(true);
+  });
+
+  it('keeps an unchanged message’s nodes, and its bubble selectable, when the transcript repaints', () => {
+    const { $, input } = mount({ reducedMotion: true });
+    const bubble = $('[data-region="timeline"] [data-bubble]');
+    pointerDown(bubble, 'mouse');
+    type(input, 'hi');
+    press(input, 'Enter');
+    vi.advanceTimersByTime(600);
+    expect($('[data-region="timeline"] [data-bubble]')).toBe(bubble);
+    expect(bubble.classList.contains('select-text')).toBe(true);
   });
 });
 
@@ -345,20 +426,20 @@ describe('the composer', () => {
 });
 
 describe('the ambient stream', () => {
-  // A roll of 0.6 makes every event a message in a background tab: Marco's.
+  // A roll of 0.6 makes every event a background message: Priya's.
   beforeEach(() => vi.spyOn(Math, 'random').mockReturnValue(0.6));
 
   it('brings background messages while the visitor is online', () => {
-    const { marcoUnread } = mount({ reducedMotion: true });
+    const { priyaUnread } = mount({ reducedMotion: true });
     vi.advanceTimersByTime(13_000);
-    expect(marcoUnread()).not.toBeNull();
+    expect(priyaUnread()).not.toBeNull();
   });
 
   it('pauses while the visitor is offline', () => {
-    const { $, marcoUnread } = mount({ reducedMotion: true });
+    const { $, priyaUnread } = mount({ reducedMotion: true });
     $('[data-action="status-menu"]').click();
     $('[data-action="set-presence"][data-presence="offline"]').click();
     vi.advanceTimersByTime(60_000);
-    expect(marcoUnread()).toBeNull();
+    expect(priyaUnread()).toBeNull();
   });
 });

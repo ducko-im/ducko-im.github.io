@@ -51,6 +51,20 @@
       "description": "Contacts becomes key, then the chat window again: title bar, traffic lights, selection and tabs switch between key and inactive"
     },
     {
+      "id": "motion-chat-window-quiet-open",
+      "from": "chat-key",
+      "region": "windows",
+      "steps": [{ "click": "windowClose:chat" }, { "wait": 1 }, { "incoming": "marco" }, { "wait": 2 }],
+      "description": "The chat window closes, then opens on its own for Marco's message, behind the key Contacts window"
+    },
+    {
+      "id": "motion-chat-window-open",
+      "from": "chat-key",
+      "region": "windows",
+      "steps": [{ "click": "windowClose:chat" }, { "wait": 1 }, { "doubleClick": "contact:jonas" }, { "wait": 1 }],
+      "description": "The chat window closes, then a double-click on Jonas opens it as the key window"
+    },
+    {
       "id": "motion-dock-bounce",
       "from": "chat-key",
       "region": "dock",

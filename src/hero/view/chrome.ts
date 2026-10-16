@@ -26,10 +26,10 @@ export function renderTitlebar(state: HeroState, window: HeroWindow): string {
   // The user can't resize Ducko's Contacts window, so its zoom button is drawn inactive even while the window is key.
   const lights = key ? [LIGHTS.close, LIGHTS.minimize, window === 'chat' ? LIGHTS.zoom : LIGHTS.inactive] : [LIGHTS.inactive, LIGHTS.inactive, LIGHTS.inactive];
   const buttons = lights
-    .map(
-      (classes, index) =>
-        `<button type="button" data-action="hint" data-hint-anchor="lights-${window}" aria-label="${['Close', 'Minimize', 'Zoom'][index]} window" class="${tw`size-3.5 rounded-full`} ${classes}"></button>`,
-    )
+    .map((classes, index) => {
+      const action = window === 'chat' && index === 0 ? 'data-action="close-chat-window"' : `data-action="hint" data-hint-anchor="lights-${window}"`;
+      return `<button type="button" ${action} aria-label="${['Close', 'Minimize', 'Zoom'][index]} window" class="${tw`size-3.5 rounded-full`} ${classes}"></button>`;
+    })
     .join('');
   return `<div class="${tw`absolute top-[9px] left-[9px] flex gap-[9px]`}">${buttons}</div><span class="${key ? tw`text-title` : tw`text-title-inactive`} ${tw`truncate pr-4 pl-[84px] font-bold`}">${escapeHtml(windowTitle(state, window))}</span>`;
 }

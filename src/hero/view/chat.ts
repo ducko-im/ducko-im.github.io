@@ -127,7 +127,7 @@ function renderBubble(state: HeroState, conversation: Conversation, row: Timelin
   const bubbleColors = outgoing ? tw`bg-bubble-out text-white` : tw`bg-bubble-in text-bubble-in-text`;
   return `<div class="${tw`flex min-w-0 flex-col gap-1`} ${outgoing ? tw`items-end` : tw`items-start`}">
     ${nickname}
-    <div class="${tw`rounded-xl px-3 py-2 leading-4 break-words whitespace-pre-wrap`} ${bubbleColors}" ${outgoing ? 'data-own-bubble' : ''} data-id="${message.id}">${body}</div>
+    <div class="${tw`rounded-xl px-3 py-2 leading-4 break-words whitespace-pre-wrap`} ${bubbleColors}" data-bubble ${outgoing ? 'data-own-bubble' : ''} data-id="${message.id}"><span class="${tw`cursor-text`}">${body}</span></div>
     ${renderMetadata(state, row, forced)}
   </div>`;
 }

@@ -64,7 +64,7 @@ const windowSizes = `--contacts-w:${contacts.width}px;--contacts-h:${contacts.he
             <Fragment set:html={renderContactsWindow(state)} />
             <button type="button" class="hero-slot-tap" aria-label="Show the Contacts window"></button>
           </div>
-          <div class="hero-slot" data-slot="chat">
+          <div class="hero-slot" data-slot="chat" hidden={!state.chatWindowOpen}>
             <Fragment set:html={renderChatWindow(state)} />
             <button type="button" class="hero-slot-tap" aria-label="Show the chat window"></button>
           </div>

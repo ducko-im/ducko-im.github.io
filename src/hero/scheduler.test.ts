@@ -20,7 +20,7 @@ function setup(random = () => 0.5) {
     state: store.getState,
     engine,
     ambient,
-    marcoUnread: () => store.getState().conversations.marco.unread,
+    priyaUnread: () => store.getState().conversations.priya.unread,
     last: (id: string) => store.getState().conversations[id].messages.at(-1)!,
   };
 }
@@ -29,31 +29,31 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe('createAmbient', () => {
-  it('fires events while nothing pauses it', () => {
-    const { marcoUnread } = setup();
+  it('fires events while nothing pauses it, from a contact without a tab too', () => {
+    const { priyaUnread } = setup();
     vi.advanceTimersByTime(8500);
-    expect(marcoUnread()).toBe(1);
+    expect(priyaUnread()).toBe(1);
   });
 
   it('stays quiet while the input has focus, without stalling a reply', () => {
-    const { engine, ambient, marcoUnread, last } = setup();
+    const { engine, ambient, priyaUnread, last } = setup();
     ambient.setPaused('focus', true);
     engine.send('lena', 'hi');
     vi.advanceTimersByTime(60_000);
-    expect(marcoUnread()).toBe(0);
+    expect(priyaUnread()).toBe(0);
     expect(last('lena').direction).toBe('in');
   });
 
   it('resumes only once every pause reason has cleared', () => {
-    const { ambient, marcoUnread } = setup();
+    const { ambient, priyaUnread } = setup();
     ambient.setPaused('focus', true);
     ambient.setPaused('hidden', true);
     ambient.setPaused('focus', false);
     vi.advanceTimersByTime(60_000);
-    expect(marcoUnread()).toBe(0);
+    expect(priyaUnread()).toBe(0);
     ambient.setPaused('hidden', false);
     vi.advanceTimersByTime(8500);
-    expect(marcoUnread()).toBe(1);
+    expect(priyaUnread()).toBe(1);
   });
 
   // Each event reads: its delay, the event roll, then the event's own picks.
@@ -76,7 +76,7 @@ describe('createAmbient', () => {
     expect(background.last('pond-club')).toMatchObject({ sender: 'Greta', body: ROOM_LINES[0] });
 
     const open = setup(sequence(0, 0.9, 0, 0));
-    open.engine.selectRow('pond-club');
+    open.engine.openChat('pond-club');
     const count = open.state().conversations['pond-club'].messages.length;
     vi.advanceTimersByTime(5000);
     expect(open.state().conversations['pond-club'].messages).toHaveLength(count);

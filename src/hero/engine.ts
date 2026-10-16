@@ -11,6 +11,32 @@ function patchConversation(state: HeroState, id: string, fn: (conversation: Conv
   return { ...state, conversations: { ...state.conversations, [id]: fn(state.conversations[id]) } };
 }
 
+/** As in Ducko, the visitor sees a conversation only while it is the active one in an open, key chat window. */
+function isInView(state: HeroState, id: string): boolean {
+  return state.chatWindowOpen && state.frontWindow === 'chat' && state.activeConversationId === id;
+}
+
+function markSeen(state: HeroState): HeroState {
+  const id = state.activeConversationId;
+  if (id === null || !isInView(state, id) || state.conversations[id].unread === 0) return state;
+  return patchConversation(state, id, (c) => ({ ...c, unread: 0 }));
+}
+
+/** Switches the chat window's conversation and, unless `quietly`, brings the window forward. */
+function activate(state: HeroState, id: string | null, { quietly = false } = {}): HeroState {
+  return markSeen({ ...state, activeConversationId: id, contextMenu: null, frontWindow: quietly ? state.frontWindow : 'chat' });
+}
+
+function withChatTab(state: HeroState, id: string): HeroState {
+  return { ...state, openTabs: state.openTabs.includes(id) ? state.openTabs : [...state.openTabs, id], chatWindowOpen: true };
+}
+
+/** As in Ducko, a contact's message gives its chat a tab, shown only when no other is, and opens a closed chat window behind the key one. */
+function openQuietly(state: HeroState, id: string): HeroState {
+  const next = withChatTab(state, id);
+  return next.activeConversationId === null ? activate(next, id, { quietly: true }) : next;
+}
+
 export interface EngineOptions {
   random?: () => number;
   now?: () => number;
@@ -18,20 +44,13 @@ export interface EngineOptions {
 
 /**
  * Owns every change to the live hero. Messages enter a conversation only through `send`, `receive` and the intro's
- * `replay`, and the active conversation changes only through `activate`, so every path gets the same bookkeeping.
+ * `replay`, and the active conversation changes only through `activate`, so that bookkeeping lives in one place.
  */
 export function createEngine(store: Store<HeroState>, timers: Timers, { random = Math.random, now = Date.now }: EngineOptions = {}) {
   const { getState, update } = store;
   const pick = <T>(items: T[]): T => items[Math.floor(random() * items.length)];
   const between = (min: number, max: number) => min + random() * (max - min);
   let pokes = 0;
-
-  function activate(id: string | null) {
-    update((s) => {
-      const next: HeroState = { ...s, activeConversationId: id, selectedRowId: id, frontWindow: 'chat', contextMenu: null };
-      return id === null ? next : patchConversation(next, id, (c) => ({ ...c, unread: 0 }));
-    });
-  }
 
   function newMessage(direction: Message['direction'], sender: string, body: string, action: boolean, time = now()): Message {
     return { id: newMessageId(), direction, sender, body, time, status: 'sent', edited: false, action };
@@ -40,13 +59,14 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
   /** `time` is for the intro, which replays seeded messages at their seeded times. */
   function receive(conversationId: string, { sender, body, time }: Pick<Message, 'sender' | 'body'> & Partial<Pick<Message, 'time'>>) {
     const message = newMessage('in', sender, body, isAction(body), time);
-    update((s) =>
-      patchConversation(s, conversationId, (c) => ({
+    update((s) => {
+      const opened = s.conversations[conversationId].kind === 'chat' ? openQuietly(s, conversationId) : s;
+      return patchConversation(opened, conversationId, (c) => ({
         ...c,
         messages: [...c.messages, message],
-        unread: s.activeConversationId === conversationId ? c.unread : c.unread + 1,
-      })),
-    );
+        unread: isInView(opened, conversationId) ? c.unread : c.unread + 1,
+      }));
+    });
   }
 
   /** The intro's own lines: an outgoing message with no lifecycle, whose status the intro advances itself. */
@@ -121,14 +141,16 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
     advanceStatus,
     setTyping,
 
-    selectRow(id: string) {
-      update((s) => (s.openTabs.includes(id) ? s : { ...s, openTabs: [...s.openTabs, id] }));
-      activate(id);
+    selectRow(id: string | null) {
+      update((s) => (s.selectedRowId === id ? s : { ...s, selectedRowId: id }));
+    },
+
+    openChat(id: string) {
+      update((s) => activate({ ...withChatTab(s, id), selectedRowId: id }, id));
     },
 
     activateTab(id: string) {
-      update((s) => ({ ...s, openMenu: null }));
-      activate(id);
+      update((s) => activate({ ...s, openMenu: null }, id));
     },
 
     closeTab(id: string) {
@@ -137,8 +159,15 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
       if (index === -1) return;
       abortConversation(id);
       const remaining = openTabs.filter((tab) => tab !== id);
-      update((s) => patchConversation({ ...s, openTabs: remaining }, id, (c) => ({ ...c, composer: EMPTY_COMPOSER, pendingReply: null })));
-      if (activeConversationId === id) activate(remaining[index] ?? remaining[index - 1] ?? null);
+      update((s) => {
+        const next = patchConversation({ ...s, openTabs: remaining }, id, (c) => ({ ...c, composer: EMPTY_COMPOSER, pendingReply: null }));
+        return activeConversationId === id ? activate(next, remaining[index] ?? remaining[index - 1] ?? null) : next;
+      });
+    },
+
+    /** Keeps the tabs, as Ducko does, and leaves the Contacts window key. */
+    closeChatWindow() {
+      update((s) => ({ ...s, chatWindowOpen: false, frontWindow: 'contacts' }));
     },
 
     send(conversationId: string, text: string) {
@@ -210,7 +239,8 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
     },
 
     setFrontWindow(frontWindow: HeroWindow) {
-      update((s) => (s.frontWindow === frontWindow ? s : { ...s, frontWindow }));
+      // A closed chat window can't become key.
+      update((s) => (s.frontWindow === frontWindow || (frontWindow === 'chat' && !s.chatWindowOpen) ? s : markSeen({ ...s, frontWindow })));
     },
 
     toggleGroup(id: string) {

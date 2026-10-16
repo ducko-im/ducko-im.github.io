@@ -44,6 +44,18 @@
       "description": "Pointer over the own-status pull-down"
     },
     {
+      "id": "contacts-lights-hover",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Pointer over the key Contacts window's traffic lights"
+    },
+    {
+      "id": "contacts-inactive-lights-hover",
+      "window": "contacts",
+      "appearances": ["light", "dark"],
+      "description": "Pointer over the inactive Contacts window's traffic lights"
+    },
+    {
       "id": "contacts-status-away",
       "window": "contacts",
       "appearances": ["light", "dark"],
@@ -116,10 +128,34 @@
       "description": "Pointer over Marco's tab: close button in its leading slot"
     },
     {
+      "id": "chat-lights-hover",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Pointer over the key chat window's traffic lights"
+    },
+    {
+      "id": "chat-inactive-lights-hover",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Pointer over the inactive chat window's traffic lights"
+    },
+    {
       "id": "chat-bubble-hover",
       "window": "chat",
       "appearances": ["light", "dark"],
       "description": "Pointer over a bubble that is not last in its group: metadata showing"
+    },
+    {
+      "id": "chat-text-selected-key",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "Part of an incoming message's text selected in the key chat window"
+    },
+    {
+      "id": "chat-text-selected-inactive",
+      "window": "chat",
+      "appearances": ["light", "dark"],
+      "description": "The same selection while the chat window is inactive"
     },
     {
       "id": "chat-me",

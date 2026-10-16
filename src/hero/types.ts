@@ -78,6 +78,7 @@ export interface HeroState {
   activeConversationId: string | null;
   tabBarWidth: number;
   selectedRowId: string | null;
+  chatWindowOpen: boolean;
   frontWindow: HeroWindow;
   openMenu: 'status' | 'overflow' | null;
   contextMenu: { messageId: string } | null;

@@ -55,7 +55,7 @@ describe('send', () => {
 
   it('gives a room message no receipts and a reply from a participant', () => {
     const { engine, state, last } = setup();
-    engine.selectRow('pond-club');
+    engine.openChat('pond-club');
     engine.send('pond-club', 'peas?');
     vi.runAllTimers();
     const messages = state().conversations['pond-club'].messages;
@@ -100,23 +100,73 @@ describe('receive', () => {
     expect(state().conversations.lena.unread).toBe(0);
     expect(state().openTabs).not.toContain('pond-club');
   });
+
+  it('counts unread in the active conversation while the chat window is not key, until it is', () => {
+    const { engine, state } = setup();
+    engine.setFrontWindow('contacts');
+    engine.receive('lena', { sender: 'lena', body: 'hi' });
+    expect(state().conversations.lena.unread).toBe(1);
+    engine.setFrontWindow('chat');
+    expect(state().conversations.lena.unread).toBe(0);
+  });
+
+  it('gives a contact’s chat a background tab and opens a closed chat window behind Contacts, but not for a room', () => {
+    const { engine, state } = setup();
+    engine.closeChatWindow();
+    engine.receive('pond-club', { sender: 'Kai', body: 'hey' });
+    expect(state().chatWindowOpen).toBe(false);
+    engine.receive('jonas', { sender: 'jonas', body: 'ping' });
+    expect(state()).toMatchObject({
+      chatWindowOpen: true,
+      frontWindow: 'contacts',
+      activeConversationId: 'lena',
+      openTabs: ['lena', 'marco', 'pond-club', 'jonas'],
+    });
+    expect(state().conversations.jonas.unread).toBe(1);
+  });
+
+  it('shows a contact’s chat when it is the only tab, leaving the roster’s selection alone', () => {
+    const { engine, state } = setup();
+    ['lena', 'marco', 'pond-club'].forEach((id) => engine.closeTab(id));
+    engine.closeChatWindow();
+    engine.selectRow('priya');
+    engine.receive('jonas', { sender: 'jonas', body: 'ping' });
+    expect(state()).toMatchObject({ chatWindowOpen: true, frontWindow: 'contacts', activeConversationId: 'jonas', selectedRowId: 'priya' });
+    expect(state().conversations.jonas.unread).toBe(1);
+  });
+
+  it('counts nothing for a contact’s chat shown in a key chat window that had no tab, and clears its old count', () => {
+    const { engine, state } = setup();
+    engine.receive('jonas', { sender: 'jonas', body: 'ping' });
+    ['lena', 'marco', 'pond-club', 'jonas'].forEach((id) => engine.closeTab(id));
+    engine.receive('jonas', { sender: 'jonas', body: 'again' });
+    expect(state()).toMatchObject({ activeConversationId: 'jonas', frontWindow: 'chat' });
+    expect(state().conversations.jonas.unread).toBe(0);
+  });
 });
 
-describe('selectRow and activateTab', () => {
-  it('opens one tab for a new conversation and brings the chat window forward', () => {
+describe('selectRow, openChat and activateTab', () => {
+  it('selects a row without opening anything', () => {
     const { engine, state } = setup();
     engine.setFrontWindow('contacts');
     engine.selectRow('jonas');
-    engine.selectRow('jonas');
+    expect(state()).toMatchObject({ openTabs: ['lena', 'marco', 'pond-club'], activeConversationId: 'lena', selectedRowId: 'jonas', frontWindow: 'contacts' });
+  });
+
+  it('opens one tab for a new conversation and brings the chat window forward', () => {
+    const { engine, state } = setup();
+    engine.closeChatWindow();
+    engine.openChat('jonas');
+    engine.openChat('jonas');
     expect(state().openTabs).toEqual(['lena', 'marco', 'pond-club', 'jonas']);
-    expect(state()).toMatchObject({ activeConversationId: 'jonas', selectedRowId: 'jonas', frontWindow: 'chat' });
+    expect(state()).toMatchObject({ activeConversationId: 'jonas', selectedRowId: 'jonas', chatWindowOpen: true, frontWindow: 'chat' });
   });
 
   it('closes the overflow menu when a tab is picked from it', () => {
     const { engine, state } = setup();
     engine.openMenu('overflow');
     engine.activateTab('marco');
-    expect(state()).toMatchObject({ openMenu: null, activeConversationId: 'marco' });
+    expect(state()).toMatchObject({ openMenu: null, activeConversationId: 'marco', selectedRowId: 'lena' });
   });
 });
 
@@ -139,12 +189,12 @@ describe('closeTab', () => {
     expect(state().activeConversationId).toBe('marco');
   });
 
-  it('clears the neighbor’s unread and selects its row', () => {
+  it('clears the neighbor’s unread and leaves the roster’s selection alone', () => {
     const { engine, state } = setup();
     engine.receive('marco', { sender: 'marco', body: 'ping' });
     engine.closeTab('lena');
     expect(state().conversations.marco.unread).toBe(0);
-    expect(state().selectedRowId).toBe('marco');
+    expect(state().selectedRowId).toBe('lena');
   });
 
   it('leaves another conversation’s edit and the active conversation alone when closing a background tab', () => {
@@ -161,6 +211,19 @@ describe('closeTab', () => {
     expect(state().activeConversationId).toBeNull();
     engine.send('lena', 'hi');
     expect(state().conversations.lena.messages).toHaveLength(4);
+  });
+});
+
+describe('closeChatWindow', () => {
+  it('keeps the tabs and makes Contacts key, and a pending reply opens the window again behind it', () => {
+    const { engine, state, last } = setup();
+    engine.send('lena', 'hi');
+    engine.closeChatWindow();
+    expect(state()).toMatchObject({ chatWindowOpen: false, frontWindow: 'contacts', openTabs: ['lena', 'marco', 'pond-club'], activeConversationId: 'lena' });
+    vi.runAllTimers();
+    expect(last('lena').direction).toBe('in');
+    expect(state()).toMatchObject({ chatWindowOpen: true, frontWindow: 'contacts' });
+    expect(state().conversations.lena.unread).toBe(1);
   });
 });
 
@@ -202,7 +265,7 @@ describe('offline', () => {
     ['lena', 'marco', 'pond-club'].forEach((id) => engine.closeTab(id));
     engine.setPresence('offline');
     engine.setPresence('available');
-    engine.selectRow('jonas');
+    engine.openChat('jonas');
     engine.send('jonas', 'hi');
     vi.runAllTimers();
     expect(last('jonas')).toMatchObject({ direction: 'in', sender: 'jonas' });

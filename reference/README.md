@@ -28,8 +28,10 @@ These are the accepted differences from the real app. Any other difference the l
 
 ## Not yet compared
 
+The six traffic-light hover and text-selection states (`*-lights-hover`, `chat-text-selected-*`) aren't imported and tuned yet. Until they are, the traffic lights show no hover glyphs and the selection highlight is the browser's.
+
 No motion is compared yet, because the ducko repo's reference mode can't record clips. `motion.json` lists the clips to record.
 
 The motion Ducko's source defines is ported as is: the Contacts window's resize with its row slide (AppKit's 0.2 s per 150 pt, ease-in-out), the group chevron (0.2 s) and the metadata fade (0.15 s). The clips will check it.
 
-macOS draws the rest, and Ducko's source says nothing about it: menus opening and closing, the Dock bounce and badge, window activation and tab close. The clips are what that motion will be tuned against.
+macOS draws the rest, and Ducko's source says nothing about it: menus opening and closing, the Dock bounce and badge, window activation, the chat window opening and closing, and tab close. The clips are what that motion will be tuned against.

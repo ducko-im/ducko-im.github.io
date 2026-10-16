@@ -1,6 +1,7 @@
 import { initialState } from './data';
 import { createEngine } from './engine';
 import { createIntro, introState } from './intro';
+import { morph } from './morph';
 import { placeContextMenu } from './placement';
 import { createAmbient } from './scheduler';
 import { createStore } from './store';
@@ -56,6 +57,7 @@ export function startHero(hero: HTMLElement) {
   const dockBadge = $('[data-dock-badge]');
   const deck = $('[data-windows]');
   const contactsSlot = $('[data-slot="contacts"]');
+  const chatSlot = $('[data-slot="chat"]');
   const input = $<HTMLTextAreaElement>('[data-composer-input]');
   const sendButton = $<HTMLButtonElement>('[data-action="send"]');
   const editBar = $('[data-edit-bar]');
@@ -67,6 +69,8 @@ export function startHero(hero: HTMLElement) {
   // Each group's latest slide, so a toggle that interrupts one continues from the height its rows reached.
   const sliding = new Map<string, { rows: HTMLElement; animation: Animation }>();
   let hintBubble: HTMLElement | null = null;
+  let pressedBubbleId: string | undefined;
+  let lastPointerType = '';
 
   function animate(element: Element | null, className: string) {
     if (!element || reducedMotion.matches) return;
@@ -144,9 +148,14 @@ export function startHero(hero: HTMLElement) {
     }
   }
 
+  function markSelectable() {
+    for (const bubble of regions.get('timeline')!.querySelectorAll<HTMLElement>('[data-bubble]')) {
+      bubble.classList.toggle(tw`select-text`, bubble.dataset.id === pressedBubbleId);
+    }
+  }
+
   function splash() {
     if (reducedMotion.matches) return;
-    const slot = $('[data-slot="chat"]');
     for (let i = 0; i < 14; i++) {
       const duck = document.createElement('span');
       duck.textContent = '🦆';
@@ -154,8 +163,17 @@ export function startHero(hero: HTMLElement) {
       duck.style.left = `${Math.random() * 90}%`;
       duck.style.animationDelay = `${Math.random() * 0.6}s`;
       duck.addEventListener('animationend', () => duck.remove());
-      slot.append(duck);
+      chatSlot.append(duck);
     }
+  }
+
+  // A focused control keeps its focus across a repaint, so a keyboard user stays on the row they selected.
+  function replaceKeepingFocus(region: HTMLElement, html: string) {
+    const focused = region.contains(document.activeElement) ? (document.activeElement as HTMLElement).dataset : {};
+    region.innerHTML = html;
+    if (!focused.action) return;
+    const selector = `[data-action="${CSS.escape(focused.action)}"]${focused.id ? `[data-id="${CSS.escape(focused.id)}"]` : ''}`;
+    region.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
   }
 
   function paint(state: HeroState, previous: HeroState | null) {
@@ -163,9 +181,17 @@ export function startHero(hero: HTMLElement) {
     for (const [name, render] of REGIONS) {
       const html = render(state);
       if (painted.get(name) === html) continue;
-      regions.get(name)!.innerHTML = html;
+      const region = regions.get(name)!;
       painted.set(name, html);
-      if (name === 'timeline') regions.get(name)!.scrollTop = 0;
+      if (name === 'timeline') {
+        // Patched in place, so a text selection in a message that stays the same survives the repaint. The patch resets
+        // each bubble's classes, so the pressed bubble is marked again.
+        morph(region, html, 'data-message-id');
+        markSelectable();
+        region.scrollTop = 0;
+      } else {
+        replaceKeepingFocus(region, html);
+      }
     }
     fitContacts(state, previous);
     slideGroups(slides);
@@ -173,6 +199,9 @@ export function startHero(hero: HTMLElement) {
     conversationView.hidden = state.activeConversationId === null;
     emptyView.hidden = state.activeConversationId !== null;
     deck.dataset.front = state.frontWindow;
+    chatSlot.hidden = !state.chatWindowOpen;
+    // The key window has the keyboard.
+    if (state.frontWindow !== 'chat') input.blur();
     syncComposer(state);
     if (previous && state.splash !== previous.splash) splash();
     if (!state.hint) hintBubble?.remove();
@@ -213,12 +242,15 @@ export function startHero(hero: HTMLElement) {
     if (id !== null) engine.send(id, input.value);
   }
 
-  function handleAction(target: HTMLElement) {
+  function handleAction(target: HTMLElement, event: MouseEvent) {
     const { action, id = '' } = target.dataset;
     const state = store.getState();
     switch (action) {
       case 'select-row':
-        return engine.selectRow(id);
+        // A double-click opens the chat, as does Return or Space on a focused row (a click of detail 0). A tap opens it at once.
+        if (event.detail !== 1 || lastPointerType === 'touch') return engine.openChat(id);
+        // Command-click deselects the selected row, as in Ducko's table, which allows an empty selection.
+        return engine.selectRow(event.metaKey && state.selectedRowId === id ? null : id);
       case 'toggle-group':
         return engine.toggleGroup(id);
       case 'status-menu':
@@ -231,6 +263,8 @@ export function startHero(hero: HTMLElement) {
         return engine.activateTab(id);
       case 'close-tab':
         return engine.closeTab(id);
+      case 'close-chat-window':
+        return engine.closeChatWindow();
       case 'start-edit':
         engine.startEdit(id);
         return input.focus();
@@ -264,7 +298,7 @@ export function startHero(hero: HTMLElement) {
     const action = target?.dataset.action;
     if (!target?.closest('[role="menu"]') && action !== 'status-menu' && action !== 'overflow-menu') engine.closeMenus();
     if (hint) showHint(hint);
-    else if (target) handleAction(target);
+    else if (target) handleAction(target, event);
   });
 
   // Compared by event rather than by target: by the time the click bubbles here, a repaint may have detached its target.
@@ -281,9 +315,16 @@ export function startHero(hero: HTMLElement) {
 
   let longPress: ReturnType<typeof setTimeout> | undefined;
   deck.addEventListener('pointerdown', (event) => {
-    const bubble = (event.target as HTMLElement).closest<HTMLElement>('[data-own-bubble]');
-    if (!bubble || event.pointerType !== 'touch') return;
-    longPress = setTimeout(() => engine.openContextMenu(bubble.dataset.id!), LONG_PRESS_MS);
+    lastPointerType = event.pointerType;
+    const bubble = (event.target as HTMLElement).closest<HTMLElement>('[data-bubble]');
+    if (event.pointerType === 'touch') {
+      if (bubble?.hasAttribute('data-own-bubble')) longPress = setTimeout(() => engine.openContextMenu(bubble.dataset.id!), LONG_PRESS_MS);
+      return;
+    }
+    // As in Ducko, a message's text is selectable within its own bubble: only the pressed bubble takes a selection.
+    if (bubble?.dataset.id === pressedBubbleId) return;
+    pressedBubbleId = bubble?.dataset.id;
+    markSelectable();
   });
   for (const type of ['pointerup', 'pointercancel', 'pointermove'] as const) deck.addEventListener(type, () => clearTimeout(longPress));
 
@@ -314,6 +355,7 @@ export function startHero(hero: HTMLElement) {
 
   input.addEventListener('focus', () => {
     intro?.skip();
+    engine.setFrontWindow('chat');
     ambient.setPaused('focus', true);
   });
   input.addEventListener('blur', () => ambient.setPaused('focus', false));
@@ -334,7 +376,10 @@ export function startHero(hero: HTMLElement) {
   timeline.addEventListener('scroll', () => placeContextMenu(regions.get('context-menu')!));
 
   const tabs = regions.get('tabs')!;
-  new ResizeObserver(() => engine.setTabBarWidth(Math.round(tabs.clientWidth - 2 * TAB_BAR_INSET))).observe(tabs);
+  // A closed chat window has no tab bar to measure.
+  new ResizeObserver(() => {
+    if (tabs.clientWidth > 0) engine.setTabBarWidth(Math.round(tabs.clientWidth - 2 * TAB_BAR_INSET));
+  }).observe(tabs);
 
   // Side by side, the grid sets the frame's width and height, so both bound the scale. Stacked, the frame's height follows the windows, so only its width does.
   function fit() {

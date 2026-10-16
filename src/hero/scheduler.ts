@@ -33,9 +33,9 @@ export function createAmbient(engine: Engine, timers: Timers, random = Math.rand
 
   function backgroundMessage() {
     const s = engine.state();
-    const chats = s.openTabs.filter((id) => id !== s.activeConversationId && s.conversations[id].kind === 'chat' && s.contacts[id].presence !== 'offline');
-    if (chats.length === 0) return roomChatter();
-    const id = pick(chats);
+    const contacts = Object.values(s.contacts).filter((c) => c.id !== s.activeConversationId && c.presence !== 'offline');
+    if (contacts.length === 0) return roomChatter();
+    const { id } = pick(contacts);
     engine.receive(id, { sender: id, body: pick(AMBIENT_LINES) });
   }
 
