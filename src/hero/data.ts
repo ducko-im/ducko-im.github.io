@@ -50,7 +50,7 @@ const PARTICIPANTS: Participant[] = [
 const ROOMS = [{ id: 'pond-club', name: 'Pond Club', subject: 'Peas, not bread 🫛', participants: PARTICIPANTS }] as const satisfies readonly Room[];
 
 type ContactId = (typeof CONTACTS)[number]['id'];
-type ConversationId = ContactId | (typeof ROOMS)[number]['id'];
+export type ConversationId = ContactId | (typeof ROOMS)[number]['id'];
 
 const GROUPS = [
   { id: 'friends', name: 'Friends', kind: 'contacts', memberIds: ['jonas', 'lena', 'noah'], collapsed: false },

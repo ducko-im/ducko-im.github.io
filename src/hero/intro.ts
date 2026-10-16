@@ -1,10 +1,12 @@
+import type { ConversationId } from './data';
 import type { Engine } from './engine';
 import type { Timers } from './timers';
 import type { HeroState } from './types';
 
 const OWNER = 'intro';
-/** The conversations that fill in: the open chat and the room whose unread badge counts up. The rest keep their history. */
-const BUILT_UP = ['lena', 'pond-club'];
+/** The conversations that fill in: the active chat and the room whose unread badge counts up. The rest keep their history. */
+const BUILT_UP = ['lena', 'pond-club'] as const satisfies readonly ConversationId[];
+const [CHAT_ID, ROOM_ID] = BUILT_UP;
 
 /** Where the intro starts from: the visitor offline, the roster gray, and the visible conversations empty. */
 export function introState(state: HeroState): HeroState {
@@ -28,14 +30,14 @@ export function createIntro(engine: Engine, timers: Timers, target: HeroState, o
     .forEach((c, index) => steps.push([500 + index * 120, () => engine.updateContact(c.id, { presence: c.presence, status: c.status })]));
 
   let at = 1400;
-  for (const message of target.conversations.lena.messages) {
+  for (const message of target.conversations[CHAT_ID].messages) {
     if (message.direction === 'in') {
-      steps.push([at, () => engine.setTyping('lena', true)]);
+      steps.push([at, () => engine.setTyping(CHAT_ID, true)]);
       steps.push([
         at + 700,
         () => {
-          engine.setTyping('lena', false);
-          engine.receive('lena', message);
+          engine.setTyping(CHAT_ID, false);
+          engine.receive(CHAT_ID, message);
         },
       ]);
       at += 1300;
@@ -44,15 +46,15 @@ export function createIntro(engine: Engine, timers: Timers, target: HeroState, o
       steps.push([
         at,
         () => {
-          id = engine.replay('lena', message);
+          id = engine.replay(CHAT_ID, message);
         },
       ]);
-      steps.push([at + 300, () => engine.advanceStatus('lena', id, 'delivered')]);
-      steps.push([at + 600, () => engine.advanceStatus('lena', id, message.status)]);
+      steps.push([at + 300, () => engine.advanceStatus(CHAT_ID, id, 'delivered')]);
+      steps.push([at + 600, () => engine.advanceStatus(CHAT_ID, id, message.status)]);
       at += 900;
     }
   }
-  target.conversations['pond-club'].messages.forEach((message, index) => steps.push([1800 + index * 1400, () => engine.receive('pond-club', message)]));
+  target.conversations[ROOM_ID].messages.forEach((message, index) => steps.push([1800 + index * 1400, () => engine.receive(ROOM_ID, message)]));
   steps.sort((a, b) => a[0] - b[0]);
 
   function run() {

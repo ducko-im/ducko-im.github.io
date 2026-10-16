@@ -444,6 +444,8 @@ export function startHero(hero: HTMLElement) {
     hero.style.setProperty('--hero-scale', String(Math.min(1, frame.clientWidth / deck.offsetWidth, heightScale)));
   }
   new ResizeObserver(fit).observe(frame);
+  // Stacked, a new scale resizes the frame, so setting it only from the observer's callback trips the ResizeObserver loop
+  // error. The window's resize event runs before ResizeObserver delivery and sets the scale first.
   addEventListener('resize', fit);
   fit();
 
