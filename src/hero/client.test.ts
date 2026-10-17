@@ -7,6 +7,7 @@ import { renderContactsWindow } from './view/contacts';
 
 let intersect: (isIntersecting: boolean) => void;
 const resizeCallbacks = new Map<Element, () => void>();
+const jonas = '[data-action="select-row"][data-id="jonas"]';
 
 function mount({ reducedMotion = false, finePointer = false } = {}) {
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -67,6 +68,19 @@ function click(target: HTMLElement, init: MouseEventInit = {}) {
   target.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1, ...init }));
 }
 
+/** Whether the hero cancelled the press, keeping focus and any text selection where they were. */
+function mouseDown(target: HTMLElement): boolean {
+  const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+  target.dispatchEvent(down);
+  return down.defaultPrevented;
+}
+
+function selectText(element: HTMLElement) {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  getSelection()!.addRange(range);
+}
+
 function pointerDown(target: HTMLElement, pointerType: string) {
   target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }));
 }
@@ -80,6 +94,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  getSelection()!.removeAllRanges();
 });
 
 describe('the intro', () => {
@@ -197,8 +212,6 @@ describe('clicks', () => {
 });
 
 describe('windows', () => {
-  const jonas = '[data-action="select-row"][data-id="jonas"]';
-
   it('selects a contact on a click, keeping Contacts key, and opens its chat on a double-click', () => {
     const { $ } = mount({ reducedMotion: true });
     click($(jonas));
@@ -237,21 +250,16 @@ describe('windows', () => {
     expect($('[data-tab="lena"]').getAttribute('aria-selected')).toBe('true');
   });
 
-  it('keeps a transcript selection when the mouse goes down in Contacts', () => {
+  it('keeps a transcript selection when the mouse goes down in Contacts or on the chat window’s chrome', () => {
     const { $ } = mount({ reducedMotion: true });
-    const mouseDownOnJonas = () => {
-      const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-      $(jonas).dispatchEvent(down);
-      return down.defaultPrevented;
-    };
-    expect(mouseDownOnJonas()).toBe(false);
+    expect(mouseDown($(jonas))).toBe(false);
     const bubble = $('[data-region="timeline"] [data-bubble]');
     pointerDown(bubble, 'mouse');
-    const range = document.createRange();
-    range.selectNodeContents(bubble);
-    getSelection()!.addRange(range);
-    expect(mouseDownOnJonas()).toBe(true);
+    selectText(bubble);
+    expect(mouseDown($(jonas))).toBe(true);
     pointerDown($(jonas), 'mouse');
+    expect(bubble.classList.contains('select-text')).toBe(true);
+    pointerDown($('[data-region="chat-titlebar"]'), 'mouse');
     expect(bubble.classList.contains('select-text')).toBe(true);
   });
 
@@ -440,7 +448,7 @@ describe('the Contacts window', () => {
     slides()[0].animation.finish();
     $(work).click();
     heights.reached = 50;
-    $('[data-action="select-row"][data-id="jonas"]').click();
+    $(jonas).click();
     expect(slides()[1].target.isConnected).toBe(false);
 
     $(work).click();
@@ -510,6 +518,52 @@ describe('the composer', () => {
     click(touch.$(tab));
     expect(touch.$('[data-tab="marco"]').getAttribute('aria-selected')).toBe('true');
     expect(document.activeElement).not.toBe(touch.input);
+  });
+
+  it('keeps the caret through a press on the chat window’s buttons and chrome, but not in the transcript', () => {
+    const { $, input } = mount({ reducedMotion: true });
+    expect(mouseDown($('[data-slot="chat"] [data-hint-anchor="info"]'))).toBe(true);
+    expect(mouseDown($('[data-action="close-tab"][data-id="marco"]'))).toBe(true);
+    expect(mouseDown($('[data-region="chat-titlebar"]'))).toBe(true);
+    expect(mouseDown(input)).toBe(false);
+    expect(mouseDown($('[data-region="timeline"] [data-bubble]'))).toBe(false);
+  });
+
+  it('takes focus back when a click makes the chat window key, but not for a click in the transcript or on a touch screen', () => {
+    const mouse = mount({ reducedMotion: true, finePointer: true });
+    click(mouse.$(jonas));
+    click(mouse.$('[data-region="timeline"]'));
+    expect(document.activeElement).not.toBe(mouse.input);
+    click(mouse.$(jonas));
+    click(mouse.$('[data-region="chat-titlebar"]'));
+    expect(document.activeElement).toBe(mouse.input);
+
+    const touch = mount({ reducedMotion: true });
+    click(touch.$(jonas));
+    click(touch.$('[data-region="chat-titlebar"]'));
+    expect(touch.$('[data-windows]').dataset.front).toBe('chat');
+    expect(document.activeElement).not.toBe(touch.input);
+  });
+
+  it('takes focus back when a click comes back to the chat window from the rest of the page, but not within the window', () => {
+    const { $, input } = mount({ reducedMotion: true, finePointer: true });
+    const titlebar = $('[data-region="chat-titlebar"]');
+    click(titlebar);
+    input.blur();
+    click(titlebar);
+    expect(document.activeElement).not.toBe(input);
+    click(document.body);
+    click(titlebar);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('leaves the keyboard to a transcript selection when a click makes the chat window key', () => {
+    const { $, input } = mount({ reducedMotion: true, finePointer: true });
+    click($(jonas));
+    selectText($('[data-region="timeline"] [data-bubble]'));
+    click($('[data-region="chat-titlebar"]'));
+    expect($('[data-windows]').dataset.front).toBe('chat');
+    expect(document.activeElement).not.toBe(input);
   });
 
   it('cancels an edit on Escape', () => {

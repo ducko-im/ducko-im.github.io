@@ -71,6 +71,7 @@ export function startHero(hero: HTMLElement) {
   const conversationView = $('[data-view="conversation"]');
   const emptyView = $('[data-view="empty"]');
   const regions = new Map(REGIONS.map(([name]) => [name, $(`[data-region="${name}"]`)]));
+  const timeline = regions.get('timeline')!;
   const painted = new Map<string, string>();
   // Each group's latest slide, so a toggle that interrupts one continues from the height its rows reached.
   const sliding = new Map<string, { rows: HTMLElement; animation: Animation }>();
@@ -160,7 +161,7 @@ export function startHero(hero: HTMLElement) {
   }
 
   function markSelectable() {
-    for (const bubble of regions.get('timeline')!.querySelectorAll<HTMLElement>('[data-bubble]')) {
+    for (const bubble of timeline.querySelectorAll<HTMLElement>('[data-bubble]')) {
       bubble.classList.toggle(tw`select-text`, bubble.dataset.id === pressedBubbleId);
     }
   }
@@ -234,10 +235,14 @@ export function startHero(hero: HTMLElement) {
     if (finePointer.matches) input.focus({ preventScroll: true });
   }
 
+  function focusComposerIfKey() {
+    const { chatWindowOpen, frontWindow, activeConversationId } = store.getState();
+    if (chatWindowOpen && frontWindow === 'chat' && activeConversationId !== null) focusComposer();
+  }
+
   /** The caret waits in the key chat window's input, unless something else already has focus. */
   function focusComposerOnFirstView() {
-    const { chatWindowOpen, frontWindow, activeConversationId } = store.getState();
-    if (document.activeElement === document.body && chatWindowOpen && frontWindow === 'chat' && activeConversationId !== null) focusComposer();
+    if (document.activeElement === document.body) focusComposerIfKey();
   }
 
   // Measured before the click repaints anything: a repaint can detach the anchor, which then has no slot or position.
@@ -321,6 +326,15 @@ export function startHero(hero: HTMLElement) {
   hero.addEventListener('click', (event) => {
     heroClick = event;
     const slot = (event.target as HTMLElement).closest<HTMLElement>('[data-slot]');
+    // As macOS restores a window's first responder, a click that makes the chat window key, from Contacts or from the
+    // rest of the page, puts the caret back in its input. It doesn't when the click lands in the transcript, a selection
+    // waits there or the keyboard pressed a control (a click of detail 0). Read before this click hands out the keyboard.
+    const restoresCaret =
+      slot === chatSlot &&
+      !(windowsHaveKeyboard && store.getState().frontWindow === 'chat') &&
+      event.detail > 0 &&
+      !timeline.contains(event.target as Node) &&
+      !hasTranscriptSelection();
     windowsHaveKeyboard = slot !== null;
     const target = (event.target as HTMLElement).closest<HTMLElement>('[data-action], [data-hero-icon]');
     const hint = slot && target?.dataset.action === 'hint' ? placeHint(target, slot) : null;
@@ -336,6 +350,7 @@ export function startHero(hero: HTMLElement) {
     if (!target?.closest('[role="menu"]') && action !== 'status-menu' && action !== 'overflow-menu') engine.closeMenus();
     if (hint) showHint(hint);
     else if (target) handleAction(target, event);
+    if (restoresCaret) focusComposerIfKey();
   });
 
   // Compared by event rather than by target: by the time the click bubbles here, a repaint may have detached its target.
@@ -359,13 +374,20 @@ export function startHero(hero: HTMLElement) {
 
   function hasTranscriptSelection(): boolean {
     const selection = getSelection();
-    return !!selection && !selection.isCollapsed && regions.get('timeline')!.contains(selection.anchorNode);
+    return !!selection && !selection.isCollapsed && timeline.contains(selection.anchorNode);
   }
 
   // As in Ducko, a click in the Contacts window leaves a selection in the transcript in place, drawn inactive. Cancelling
-  // the mousedown keeps the browser from collapsing it; the deck's pointerdown leaves the selected bubble selectable.
+  // the mousedown keeps the browser from collapsing it.
   contactsSlot.addEventListener('mousedown', (event) => {
     if (hasTranscriptSelection()) event.preventDefault();
+  });
+
+  // Ducko's buttons and window chrome don't take the keyboard, so a press in the chat window outside its input and
+  // transcript leaves the caret, and a transcript selection, where they were.
+  chatSlot.addEventListener('mousedown', (event) => {
+    const target = event.target as Node;
+    if (target !== input && !timeline.contains(target)) event.preventDefault();
   });
 
   let longPress: ReturnType<typeof setTimeout> | undefined;
@@ -376,7 +398,8 @@ export function startHero(hero: HTMLElement) {
       if (bubble?.hasAttribute('data-own-bubble')) longPress = setTimeout(() => openContextMenu(bubble, event.clientX, event.clientY), LONG_PRESS_MS);
       return;
     }
-    if (contactsSlot.contains(event.target as Node) && hasTranscriptSelection()) return;
+    // A selection a press outside the transcript kept stays drawn: its bubble stays selectable.
+    if (!timeline.contains(event.target as Node) && hasTranscriptSelection()) return;
     // As in Ducko, a message's text is selectable within its own bubble: only the pressed bubble takes a selection.
     if (bubble?.dataset.id === pressedBubbleId) return;
     pressedBubbleId = bubble?.dataset.id;
@@ -451,7 +474,6 @@ export function startHero(hero: HTMLElement) {
 
   // The edit bar, a multi-line draft or a narrower window resizes the timeline; keep its newest message in view and the
   // context menu on its bubble.
-  const timeline = regions.get('timeline')!;
   new ResizeObserver(() => {
     timeline.scrollTop = 0;
     placeMenu();
