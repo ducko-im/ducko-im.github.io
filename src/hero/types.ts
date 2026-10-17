@@ -64,8 +64,8 @@ export interface Conversation {
   unread: number;
   typing: boolean;
   composer: Composer;
-  /** A reply is owed for the latest outgoing message. It survives going offline and resumes on reconnect. */
-  pendingReply: { egg: boolean } | null;
+  /** A reply is owed for these outgoing messages, answered together. It survives going offline and resumes on reconnect. */
+  pendingReply: { messageIds: string[]; egg: boolean } | null;
 }
 
 export interface HeroState {

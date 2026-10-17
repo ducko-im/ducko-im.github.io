@@ -35,21 +35,21 @@ function contact<Id extends string>(
 
 const CONTACTS = [
   contact('lena', 'Lena Fischer', 'available', 'Feeding the ducks', { emoji: '🦊', gradient: ['rgb(252 204 158)', 'rgb(250 158 107)'] }),
-  contact('jonas', 'Jonas Weber', 'away', 'At the gym', { emoji: '🐼', gradient: ['rgb(189 230 204)', 'rgb(120 199 163)'] }),
-  contact('noah', 'Noah Becker', 'offline', null, {}, '2 hours ago'),
+  contact('jonas', 'Jonas Silva', 'away', 'At the gym', { emoji: '🐼', gradient: ['rgb(189 230 204)', 'rgb(120 199 163)'] }),
+  contact('noah', 'Noah Kim', 'offline', null, {}, '2 hours ago'),
   contact('priya', 'Priya Nair', 'dnd', 'Deep work until 3', { emoji: '🦉', gradient: ['rgb(204 199 247)', 'rgb(148 140 230)'] }),
   contact('marco', 'Marco Rossi', 'available', 'In code review', { emoji: '🐻', gradient: ['rgb(184 219 252)', 'rgb(107 173 242)'] }),
 ];
 
 const PARTICIPANTS: Participant[] = [
-  { nickname: 'Greta', color: { light: '#b23fd1', dark: '#cf8ee3' } },
-  { nickname: 'Kai', color: { light: '#00806e', dark: '#00ad95' } },
-  { nickname: 'Ole', color: { light: '#b85c00', dark: '#ec8a3f' } },
+  { nickname: 'Amara', color: { light: '#e32f00', dark: '#ff7166' } },
+  { nickname: 'Kai', color: { light: '#8752ff', dark: '#a78bff' } },
+  { nickname: 'Mateo', color: { light: '#e000a2', dark: '#ff63c3' } },
 ];
 
 const ROOMS = [{ id: 'pond-club', name: 'Pond Club', subject: 'Peas, not bread 🫛', participants: PARTICIPANTS }] as const satisfies readonly Room[];
 
-type ContactId = (typeof CONTACTS)[number]['id'];
+export type ContactId = (typeof CONTACTS)[number]['id'];
 export type ConversationId = ContactId | (typeof ROOMS)[number]['id'];
 
 const GROUPS = [
@@ -74,38 +74,11 @@ const SEEDS: Partial<Record<ConversationId, Seed[]>> = {
   priya: [['out', 3600, 'Ping me when you surface 🙂']],
   marco: [['in', 2400, 'Your PR looks great. One nit about duck typing 🦆']],
   'pond-club': [
-    ['in', 900, "Who's bringing bread?", 'Greta'],
+    ['in', 900, "Who's bringing bread?", 'Amara'],
     ['in', 840, 'Not bread! Peas are better for ducks 🫛', 'Kai'],
-    ['in', 780, 'Oats work too.', 'Ole'],
+    ['in', 780, 'Oats work too.', 'Mateo'],
   ],
 };
-
-export const REPLIES: Record<string, string[]> = {
-  lena: ['Ha, love it 😄', "Deal. I'll save you a spot by the reeds.", 'The ducks say hi 🦆', 'On my way!'],
-  jonas: ['Back from the gym in 20 💪', 'Sounds like a plan.', "Can't talk, mid-set!"],
-  noah: ["Sorry, just saw this. What's up?", 'Back online!'],
-  priya: ['Surfacing soon, promise 🦉', 'Noted. Back after 3.', 'Thanks, will check later.'],
-  marco: ['Approved ✅', 'Good catch, fixing it now.', 'Let me look after this review.'],
-} satisfies Record<ContactId, string[]>;
-
-export const ROOM_LINES = [
-  'Agreed!',
-  'Ha 😄',
-  'See you all at six.',
-  'Does anyone have spare oats?',
-  'The ducklings are getting big 🐣',
-  'Quiet morning at the pond today.',
-];
-
-export const EGG_REPLIES = ['Quack quack! 🦆', 'Did someone say duck? 🦆🦆', 'Adium walked so Ducko could waddle 🦆', 'QUACK. (That means hi.)'];
-
-export const AMBIENT_LINES = [
-  'Are you around later?',
-  'Look at this sunset 🌅',
-  'Quick question when you have a sec',
-  'Haha, classic 😂',
-  'Did you see the heron by the pond?',
-];
 
 export const AMBIENT_STATUSES: [Presence, string | null][] = [
   ['available', null],

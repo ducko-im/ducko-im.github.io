@@ -1,20 +1,44 @@
-import { AMBIENT_LINES, AMBIENT_STATUSES, ROOM_LINES } from './data';
+import { AMBIENT_STATUSES } from './data';
 import type { Engine } from './engine';
+import { STORY, type StoryStep } from './script';
 import type { Timers } from './timers';
 
-export type PauseReason = 'focus' | 'hidden' | 'offscreen' | 'offline' | 'intro';
+export type PauseReason = 'draft' | 'hidden' | 'offscreen' | 'offline' | 'intro';
 
 const OWNER = 'ambient';
 
-/** The ambient stream: presence changes, sign-ons, room chatter and background messages. It runs only while no pause reason is active. */
+/**
+ * The ambient stream: the storyline once, then only now and then a presence change. Plans the visitor mentioned are
+ * passed on first. It runs only while no pause reason is active.
+ */
 export function createAmbient(engine: Engine, timers: Timers, random = Math.random) {
   const reasons = new Set<PauseReason>();
   let scheduled = false;
+  let next = 0;
   const pick = <T>(items: T[]): T => items[Math.floor(random() * items.length)];
+
+  /**
+   * Plays a step, which says nothing once its conversation has signed off or while its contact is offline. While the
+   * conversation is busy with the visitor, it returns false and the step waits for the next event.
+   */
+  function play(step: StoryStep): boolean {
+    const id = 'say' in step ? step.say : step.presence;
+    if (engine.isBusy(id)) return false;
+    if ('say' in step) {
+      engine.tell(id);
+    } else {
+      const [presence, status] = step.to;
+      engine.updateContact(id, { presence, status });
+      if (step.announce) engine.announce(id);
+    }
+    return true;
+  }
 
   function changePresence() {
     const s = engine.state();
-    const contact = pick(Object.values(s.contacts).filter((c) => c.id !== s.activeConversationId));
+    const contacts = Object.values(s.contacts).filter((c) => c.id !== s.activeConversationId && !engine.isSignedOff(c.id) && !engine.isBusy(c.id));
+    if (contacts.length === 0) return;
+    const contact = pick(contacts);
     if (contact.presence === 'offline') {
       engine.updateContact(contact.id, { presence: 'available', status: null });
     } else if (random() < 0.15) {
@@ -25,31 +49,17 @@ export function createAmbient(engine: Engine, timers: Timers, random = Math.rand
     }
   }
 
-  function roomChatter() {
-    const s = engine.state();
-    const room = Object.values(s.rooms).find((r) => r.id !== s.activeConversationId);
-    if (room) engine.receive(room.id, { sender: pick(room.participants).nickname, body: pick(ROOM_LINES) });
-  }
-
-  function backgroundMessage() {
-    const s = engine.state();
-    const contacts = Object.values(s.contacts).filter((c) => c.id !== s.activeConversationId && c.presence !== 'offline');
-    if (contacts.length === 0) return roomChatter();
-    const { id } = pick(contacts);
-    engine.receive(id, { sender: id, body: pick(AMBIENT_LINES) });
-  }
-
   function runEvent() {
-    const roll = random();
-    if (roll < 0.5) changePresence();
-    else if (roll < 0.75) backgroundMessage();
-    else roomChatter();
+    if (engine.relayHook()) return;
+    if (next === STORY.length) changePresence();
+    else if (play(STORY[next])) next += 1;
   }
 
   function scheduleNext() {
     if (scheduled || reasons.size > 0) return;
     scheduled = true;
-    timers.schedule(OWNER, 5000 + random() * 7000, () => {
+    const delay = next === STORY.length ? 15_000 + random() * 15_000 : 5000 + random() * 7000;
+    timers.schedule(OWNER, delay, () => {
       scheduled = false;
       runEvent();
       scheduleNext();
@@ -60,6 +70,7 @@ export function createAmbient(engine: Engine, timers: Timers, random = Math.rand
 
   return {
     setPaused(reason: PauseReason, paused: boolean) {
+      if (paused === reasons.has(reason)) return;
       if (paused) {
         reasons.add(reason);
         timers.cancelOwner(OWNER);

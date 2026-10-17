@@ -43,12 +43,18 @@ interface HintPlacement {
 export function startHero(hero: HTMLElement) {
   const { timeZone } = Intl.DateTimeFormat().resolvedOptions();
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const finePointer = matchMedia('(pointer: fine)');
   const target = initialState(Date.now(), { locale: navigator.language, timeZone });
   const store = createStore(reducedMotion.matches ? target : introState(target));
   const timers = createTimers();
   const engine = createEngine(store, timers);
   const ambient = createAmbient(engine, timers);
-  const intro = reducedMotion.matches ? null : createIntro(engine, timers, target, () => ambient.setPaused('intro', false));
+  const intro = reducedMotion.matches
+    ? null
+    : createIntro(engine, timers, target, (playedOut) => {
+        ambient.setPaused('intro', false);
+        if (playedOut) focusComposerOnFirstView();
+      });
   if (intro) ambient.setPaused('intro', true);
 
   const $ = <T extends HTMLElement>(selector: string) => hero.querySelector<T>(selector)!;
@@ -72,6 +78,7 @@ export function startHero(hero: HTMLElement) {
   let pressedBubbleId: string | undefined;
   let lastPointerType = '';
   let onScreen = false;
+  let viewed = false;
   // Whether the last click landed in a window, so the windows have the keyboard rather than the rest of the page.
   let windowsHaveKeyboard = false;
   let menuPoint: BubblePoint | undefined;
@@ -219,6 +226,18 @@ export function startHero(hero: HTMLElement) {
     dockBadge.hidden = unread === 0;
     if (previous && unread > totalUnread(previous)) animate(dockIcon, 'dock-bounce');
     ambient.setPaused('offline', state.ownPresence === 'offline');
+    ambient.setPaused('draft', composerView(state).canSend);
+  }
+
+  /** Not with a touch screen, where focus would raise the on-screen keyboard. */
+  function focusComposer() {
+    if (finePointer.matches) input.focus({ preventScroll: true });
+  }
+
+  /** The caret waits in the key chat window's input, unless something else already has focus. */
+  function focusComposerOnFirstView() {
+    const { chatWindowOpen, frontWindow, activeConversationId } = store.getState();
+    if (document.activeElement === document.body && chatWindowOpen && frontWindow === 'chat' && activeConversationId !== null) focusComposer();
   }
 
   // Measured before the click repaints anything: a repaint can detach the anchor, which then has no slot or position.
@@ -269,7 +288,8 @@ export function startHero(hero: HTMLElement) {
       case 'set-presence':
         return engine.setPresence(target.dataset.presence as HeroState['ownPresence']);
       case 'activate-tab':
-        return engine.activateTab(id);
+        engine.activateTab(id);
+        return focusComposer();
       case 'close-tab':
         return engine.closeTab(id);
       case 'close-chat-window':
@@ -411,15 +431,17 @@ export function startHero(hero: HTMLElement) {
   input.addEventListener('focus', () => {
     intro?.skip();
     engine.setFrontWindow('chat');
-    ambient.setPaused('focus', true);
   });
-  input.addEventListener('blur', () => ambient.setPaused('focus', false));
   ambient.setPaused('hidden', document.hidden);
   document.addEventListener('visibilitychange', () => ambient.setPaused('hidden', document.hidden));
   new IntersectionObserver(([entry]) => {
     onScreen = entry.isIntersecting;
     ambient.setPaused('offscreen', !entry.isIntersecting);
-    if (entry.isIntersecting) intro?.start();
+    if (!entry.isIntersecting) return;
+    // Under reduced motion there's no intro to wait for.
+    if (!intro && !viewed) focusComposerOnFirstView();
+    viewed = true;
+    intro?.start();
   }).observe(deck);
 
   // The edit bar, a multi-line draft or a narrower window resizes the timeline; keep its newest message in view and the

@@ -19,8 +19,9 @@ export function introState(state: HeroState): HeroState {
 /**
  * Plays the hero from `introState` up to `target`: the visitor comes online, contacts sign on one by one, and the
  * conversations fill in. `skip` jumps to the end, so an early click in a window or focus on the input lands on the finished state.
+ * `onDone` learns whether the intro played out or was skipped.
  */
-export function createIntro(engine: Engine, timers: Timers, target: HeroState, onDone: () => void) {
+export function createIntro(engine: Engine, timers: Timers, target: HeroState, onDone: (playedOut: boolean) => void) {
   const steps: [at: number, run: () => void][] = [[300, () => engine.setPresence(target.ownPresence)]];
   let started = false;
   let next = 0;
@@ -57,22 +58,22 @@ export function createIntro(engine: Engine, timers: Timers, target: HeroState, o
   target.conversations[ROOM_ID].messages.forEach((message, index) => steps.push([1800 + index * 1400, () => engine.receive(ROOM_ID, message)]));
   steps.sort((a, b) => a[0] - b[0]);
 
-  function run() {
+  function run(skipping = false) {
     steps[next][1]();
     next += 1;
-    if (next === steps.length) onDone();
+    if (next === steps.length) onDone(!skipping);
   }
 
   return {
     start() {
       if (started || next === steps.length) return;
       started = true;
-      steps.forEach(([delay]) => timers.schedule(OWNER, delay, run));
+      steps.forEach(([delay]) => timers.schedule(OWNER, delay, () => run()));
     },
     skip() {
       if (next === steps.length) return;
       timers.cancelOwner(OWNER);
-      while (next < steps.length) run();
+      while (next < steps.length) run(true);
     },
   };
 }

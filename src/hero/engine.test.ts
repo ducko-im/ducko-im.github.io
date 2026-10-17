@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EGG_REPLIES, FIXTURE_NOW, ROOM_LINES, initialState } from './data';
+import { FIXTURE_NOW, initialState } from './data';
 import { createEngine } from './engine';
+import { EGG_LINES, PERSONAS } from './script';
 import { createStore } from './store';
 import { createTimers } from './timers';
 
@@ -60,8 +61,78 @@ describe('send', () => {
     vi.runAllTimers();
     const messages = state().conversations['pond-club'].messages;
     expect(messages.at(-2)).toMatchObject({ direction: 'out', body: 'peas?', status: 'sent' });
-    expect(state().rooms['pond-club'].participants.map((p) => p.nickname)).toContain(last('pond-club').sender);
-    expect(ROOM_LINES).toContain(last('pond-club').body);
+    const [sender, body] = PERSONAS['pond-club'].lines.pond![0];
+    expect(last('pond-club')).toMatchObject({ direction: 'in', sender, body });
+  });
+
+  it('answers a burst of messages once, for what they say together', () => {
+    const { engine, state, last } = setup();
+    engine.send('lena', 'hey');
+    engine.send('lena', 'what time again?');
+    vi.runAllTimers();
+    expect(last('lena').body).toBe(PERSONAS.lena.lines.when![0]);
+    expect(state().conversations.lena.messages.filter((m) => m.direction === 'in')).toHaveLength(3);
+  });
+
+  it('answers a message as edited before the reply', () => {
+    const { engine, last } = setup();
+    engine.send('lena', "I'll bring cake");
+    engine.startEdit(last('lena').id);
+    engine.send('lena', "I'll bring pizza");
+    vi.runAllTimers();
+    expect(last('lena').body).toBe("Pizza?! You're the best 🙌");
+  });
+
+  it('keeps a line the contact was typing on its own for later when the visitor writes meanwhile', () => {
+    const { engine, last } = setup();
+    engine.tell('marco');
+    vi.advanceTimersByTime(500);
+    engine.send('marco', 'hi');
+    vi.runAllTimers();
+    expect(last('marco').body).toBe(PERSONAS.marco.lines.greeting![0]);
+    engine.tell('marco');
+    vi.runAllTimers();
+    expect(last('marco').body).toBe(PERSONAS.marco.beats[0]);
+  });
+
+  it('signs off at a goodbye, goes offline, and leaves later messages undelivered', () => {
+    const { engine, state, last } = setup();
+    engine.send('lena', 'bye!');
+    vi.runAllTimers();
+    expect(last('lena').body).toBe(PERSONAS.lena.signOff);
+    expect(state().contacts.lena.presence).toBe('offline');
+    engine.send('lena', 'wait, one more thing');
+    vi.runAllTimers();
+    expect(last('lena')).toMatchObject({ direction: 'out', status: 'sent' });
+    expect(state().conversations.lena.pendingReply).toBeNull();
+  });
+
+  it('has an offline contact sign on before the message is delivered, and answer it', () => {
+    const { engine, state, last } = setup();
+    engine.openChat('noah');
+    engine.send('noah', 'you around?');
+    vi.advanceTimersByTime(14_000);
+    expect(last('noah').status).toBe('sent');
+    expect(state().contacts.noah.presence).toBe('offline');
+    vi.advanceTimersByTime(1000);
+    expect(state().contacts.noah).toMatchObject({ presence: 'available', lastSeen: null });
+    vi.runAllTimers();
+    expect(last('noah')).toMatchObject({ direction: 'in', body: PERSONAS.noah.arrive });
+  });
+
+  it('has a contact on Do Not Disturb read late and answer briefly, and a second message bring them out', () => {
+    const { engine, state, last } = setup();
+    engine.openChat('priya');
+    engine.send('priya', 'quick question');
+    vi.advanceTimersByTime(1500);
+    expect(last('priya').status).toBe('delivered');
+    vi.runAllTimers();
+    expect(last('priya').body).toBe(PERSONAS.priya.dnd);
+    expect(state().contacts.priya.presence).toBe('dnd');
+    engine.send('priya', 'sorry, really quick');
+    vi.runAllTimers();
+    expect(last('priya').body).toBe(PERSONAS.priya.arrive);
+    expect(state().contacts.priya).toMatchObject({ presence: 'available', status: null });
   });
 
   it('sends /me as an action, and an edit can turn a message into one', () => {
@@ -78,7 +149,7 @@ describe('send', () => {
     engine.send('lena', 'quack');
     expect(state().splash).toBe(1);
     vi.runAllTimers();
-    expect(EGG_REPLIES).toContain(last('lena').body);
+    expect(last('lena').body).toBe(EGG_LINES[0]);
   });
 
   it('ignores a blank message', () => {

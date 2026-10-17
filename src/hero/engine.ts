@@ -1,10 +1,12 @@
 import { isAction, parseOutgoing } from './commands';
-import { EGG_REPLIES, EMPTY_COMPOSER, REPLIES, ROOM_LINES, newMessageId } from './data';
+import { EMPTY_COMPOSER, newMessageId } from './data';
+import { type Offer, type Situation, createReplyBook } from './replies';
 import type { Store } from './store';
 import type { Timers } from './timers';
 import type { Contact, Conversation, HeroState, HeroWindow, Message, MessageStatus, Presence } from './types';
 
 const STATUS_RANK: Record<MessageStatus, number> = { sent: 0, delivered: 1, read: 2 };
+const SITUATIONS: Record<Exclude<Presence, 'offline'>, Situation> = { available: 'available', away: 'away', xa: 'away', dnd: 'dnd' };
 const POKES_FOR_DUCK_MODE = 7;
 
 function patchConversation(state: HeroState, id: string, fn: (conversation: Conversation) => Conversation): HeroState {
@@ -50,6 +52,7 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
   const { getState, update } = store;
   const pick = <T>(items: T[]): T => items[Math.floor(random() * items.length)];
   const between = (min: number, max: number) => min + random() * (max - min);
+  const book = createReplyBook(voice);
   let pokes = 0;
 
   function newMessage(direction: Message['direction'], sender: string, body: string, action: boolean, time = now()): Message {
@@ -97,29 +100,111 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
     update((s) => (s.conversations[conversationId].typing === typing ? s : patchConversation(s, conversationId, (c) => ({ ...c, typing }))));
   }
 
-  function commitReply(conversationId: string) {
+  /** Who says a line that names no sender: the contact, or someone in the room. */
+  function voice(conversationId: string): string {
     const s = getState();
-    const conversation = s.conversations[conversationId];
-    const egg = conversation.pendingReply?.egg;
+    return s.conversations[conversationId].kind === 'room' ? pick(s.rooms[conversationId].participants).nickname : conversationId;
+  }
+
+  /** A signed-off contact stays offline for the rest of the visit. */
+  function updateContact(id: string, patch: Partial<Pick<Contact, 'presence' | 'status'>>) {
+    if (book.isSignedOff(id) && patch.presence !== 'offline') return;
+    update((s) => {
+      const contact = { ...s.contacts[id], ...patch };
+      // A contact who comes online has no last-seen time to show the next time they go offline.
+      if (contact.presence !== 'offline') contact.lastSeen = null;
+      return { ...s, contacts: { ...s.contacts, [id]: contact } };
+    });
+  }
+
+  function situationOf(conversationId: string, arriving: boolean): Situation {
+    const s = getState();
+    if (arriving) return 'arriving';
+    if (s.conversations[conversationId].kind === 'room') return 'available';
+    const { presence } = s.contacts[conversationId];
+    return presence === 'offline' ? 'available' : SITUATIONS[presence];
+  }
+
+  /** Answers the visitor's messages as they read now, edits included. */
+  function commitReply(conversationId: string, arriving: boolean) {
+    const conversation = getState().conversations[conversationId];
+    const { messageIds, egg } = conversation.pendingReply!;
+    const text = conversation.messages
+      .filter((m) => messageIds.includes(m.id))
+      .map((m) => m.body)
+      .join('\n');
+    book.hear(conversationId, text);
+    const reply = book.reply(conversationId, text, situationOf(conversationId, arriving), egg);
     update((state) => patchConversation(state, conversationId, (c) => ({ ...c, typing: false, pendingReply: null })));
-    if (conversation.kind === 'room') {
-      receive(conversationId, { sender: pick(s.rooms[conversationId].participants).nickname, body: pick(egg ? EGG_REPLIES : ROOM_LINES) });
+    if (reply.arrives) updateContact(conversationId, { presence: 'available', status: null });
+    receive(conversationId, reply);
+    // Not the conversation's own timer, which a message sent right after the sign-off would cancel.
+    if (reply.signsOff && conversation.kind === 'chat')
+      timers.schedule('presence', 1500, () => updateContact(conversationId, { presence: 'offline', status: null }));
+  }
+
+  /** Delivered, then read once the contact gets to it, then typing and one reply. */
+  function replyLifecycle(conversationId: string, arriving: boolean) {
+    const presence = getState().contacts[conversationId].presence;
+    const readAt = presence === 'available' ? 1500 : between(5000, 9000);
+    timers.schedule(conversationId, 600, () => advanceOutgoing(conversationId, 'delivered'));
+    timers.schedule(conversationId, readAt, () => advanceOutgoing(conversationId, 'read'));
+    timers.schedule(conversationId, readAt + 500, () => setTyping(conversationId, true));
+    timers.schedule(conversationId, readAt + 500 + between(1500, 3000), () => commitReply(conversationId, arriving));
+  }
+
+  /**
+   * The reply owed for the visitor's latest messages, timed by the contact's presence. Away and Do Not Disturb read late.
+   * An offline contact signs on first, leaving the messages undelivered until then. A conversation that signed off never
+   * answers. Rooms skip the receipts and typing and get only the reply.
+   */
+  function scheduleLifecycle(conversationId: string) {
+    timers.cancelOwner(conversationId);
+    if (book.isSignedOff(conversationId)) return;
+    const s = getState();
+    if (s.conversations[conversationId].kind === 'room') {
+      timers.schedule(conversationId, between(1500, 3000), () => commitReply(conversationId, false));
+    } else if (s.contacts[conversationId].presence === 'offline') {
+      timers.schedule(conversationId, between(10_000, 20_000), () => {
+        updateContact(conversationId, { presence: 'available', status: null });
+        replyLifecycle(conversationId, true);
+      });
     } else {
-      receive(conversationId, { sender: conversationId, body: pick(egg ? EGG_REPLIES : REPLIES[conversationId]) });
+      replyLifecycle(conversationId, false);
     }
   }
 
-  /** Delivered and read for every outgoing message not yet read, then typing and one reply. Rooms skip the receipts and typing and get only the reply. */
-  function scheduleLifecycle(conversationId: string) {
-    timers.cancelOwner(conversationId);
-    if (getState().conversations[conversationId].kind === 'room') {
-      timers.schedule(conversationId, between(1500, 3000), () => commitReply(conversationId));
-      return;
-    }
-    timers.schedule(conversationId, 600, () => advanceOutgoing(conversationId, 'delivered'));
-    timers.schedule(conversationId, 1500, () => advanceOutgoing(conversationId, 'read'));
-    timers.schedule(conversationId, 2000, () => setTyping(conversationId, true));
-    timers.schedule(conversationId, 2000 + between(1500, 3000), () => commitReply(conversationId));
+  /**
+   * Whether the conversation is busy with the visitor (a reply owed, even one held while the visitor is offline) or
+   * typing, so anything it would bring up on its own waits.
+   */
+  function isBusy(conversationId: string): boolean {
+    const { pendingReply, typing } = getState().conversations[conversationId];
+    return pendingReply !== null || typing;
+  }
+
+  /** Whether the conversation can bring something up now: it hasn't signed off, isn't busy, and is a room or an online contact. */
+  function canSpeak(conversationId: string): boolean {
+    const s = getState();
+    if (book.isSignedOff(conversationId) || isBusy(conversationId)) return false;
+    return s.conversations[conversationId].kind === 'room' || s.contacts[conversationId].presence !== 'offline';
+  }
+
+  /**
+   * Says an offered line after typing, as a reply has; a room skips the typing. The line is claimed only on delivery, so
+   * one cancelled by the visitor's message or going offline is offered again later.
+   */
+  function speak(conversationId: string, offer: Offer | null) {
+    if (!offer) return;
+    const deliver = () => {
+      if (offer.take()) receive(conversationId, offer.said);
+    };
+    if (getState().conversations[conversationId].kind === 'room') return deliver();
+    setTyping(conversationId, true);
+    timers.schedule(conversationId, 1500, () => {
+      setTyping(conversationId, false);
+      deliver();
+    });
   }
 
   /** Stops a conversation's lifecycle where it stands: messages keep their status and typing stops. `pendingReply` stays, so `resumePending` can restart it. */
@@ -140,6 +225,26 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
     replay,
     advanceStatus,
     setTyping,
+    updateContact,
+    isBusy,
+    isSignedOff: book.isSignedOff,
+
+    /** Says the conversation's next storyline beat, if it can speak and has one left. */
+    tell(conversationId: string) {
+      if (canSpeak(conversationId)) speak(conversationId, book.beat(conversationId));
+    },
+
+    /** Says the contact's `arrive` line, if it can speak and hasn't said it yet. */
+    announce(conversationId: string) {
+      if (canSpeak(conversationId)) speak(conversationId, book.arrival(conversationId));
+    },
+
+    /** Passes a plan the visitor mentioned to another conversation that can speak. Returns whether one was passed on. */
+    relayHook(): boolean {
+      const offer = book.relay(canSpeak);
+      if (offer) speak(offer.conversationId, offer);
+      return offer !== null;
+    },
 
     selectRow(id: string | null) {
       update((s) => (s.selectedRowId === id ? s : { ...s, selectedRowId: id }));
@@ -201,8 +306,14 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
         return;
       }
       const message = newMessage('out', 'me', body, kind === 'me');
+      const owesReply = !book.isSignedOff(conversationId);
       update((state) => ({
-        ...patchConversation(state, conversationId, (c) => ({ ...c, messages: [...c.messages, message], composer: EMPTY_COMPOSER, pendingReply: { egg } })),
+        ...patchConversation(state, conversationId, (c) => ({
+          ...c,
+          messages: [...c.messages, message],
+          composer: EMPTY_COMPOSER,
+          pendingReply: owesReply ? { messageIds: [...(c.pendingReply?.messageIds ?? []), message.id], egg } : null,
+        })),
         splash: egg ? state.splash + 1 : state.splash,
       }));
       if (s.ownPresence !== 'offline') scheduleLifecycle(conversationId);
@@ -281,10 +392,6 @@ export function createEngine(store: Store<HeroState>, timers: Timers, { random =
 
     setTabBarWidth(tabBarWidth: number) {
       update((s) => (s.tabBarWidth === tabBarWidth ? s : { ...s, tabBarWidth }));
-    },
-
-    updateContact(id: string, patch: Partial<Pick<Contact, 'presence' | 'status'>>) {
-      update((s) => ({ ...s, contacts: { ...s.contacts, [id]: { ...s.contacts[id], ...patch } } }));
     },
   };
 }

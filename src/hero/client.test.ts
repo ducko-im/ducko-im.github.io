@@ -8,8 +8,10 @@ import { renderContactsWindow } from './view/contacts';
 let intersect: (isIntersecting: boolean) => void;
 const resizeCallbacks = new Map<Element, () => void>();
 
-function mount({ reducedMotion = false } = {}) {
-  vi.stubGlobal('matchMedia', (query: string) => ({ matches: reducedMotion && query.includes('reduced-motion') }));
+function mount({ reducedMotion = false, finePointer = false } = {}) {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('reduced-motion') ? reducedMotion : finePointer && query.includes('pointer: fine'),
+  }));
   vi.stubGlobal(
     'IntersectionObserver',
     class {
@@ -45,7 +47,7 @@ function mount({ reducedMotion = false } = {}) {
     $,
     input: $<HTMLTextAreaElement>('[data-composer-input]'),
     messageCount: () => $('[data-region="timeline"]').querySelectorAll('[data-message-id]').length,
-    priyaUnread: () => hero.querySelector('[data-tab="priya"] [data-unread]'),
+    jonasUnread: () => hero.querySelector('[data-tab="jonas"] [data-unread]'),
     resize: (element: Element) => resizeCallbacks.get(element)!(),
   };
 }
@@ -89,11 +91,42 @@ describe('the intro', () => {
     expect(messageCount()).toBe(4);
   });
 
+  it('puts the caret in the input once the windows have built up, with a mouse or trackpad but not a touch screen', () => {
+    const mouse = mount({ finePointer: true });
+    intersect(true);
+    vi.advanceTimersByTime(5000);
+    expect(document.activeElement).not.toBe(mouse.input);
+    vi.advanceTimersByTime(5000);
+    expect(document.activeElement).toBe(mouse.input);
+
+    const touch = mount();
+    intersect(true);
+    vi.advanceTimersByTime(10_000);
+    expect(document.activeElement).not.toBe(touch.input);
+  });
+
+  it('leaves the caret alone when the visitor cut the intro short', () => {
+    const { $, input } = mount({ finePointer: true });
+    intersect(true);
+    vi.advanceTimersByTime(2000);
+    $('[data-region="timeline"]').click();
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  it('puts the caret in the input at first view under reduced motion', () => {
+    const { input } = mount({ reducedMotion: true, finePointer: true });
+    expect(document.activeElement).not.toBe(input);
+    intersect(true);
+    expect(document.activeElement).toBe(input);
+  });
+
   it('plays nothing under reduced motion, whatever the visitor does', () => {
     const { $, input, messageCount } = mount({ reducedMotion: true });
     intersect(true);
     $('[data-slot="contacts"] [data-action="select-row"][data-id="lena"]').click();
     input.focus();
+    // A draft pauses the ambient stream, so only the intro could add to the transcript.
+    type(input, 'hi');
     vi.advanceTimersByTime(10_000);
     expect(messageCount()).toBe(4);
     expect($('[data-dock-badge]').textContent).toBe('3');
@@ -467,6 +500,18 @@ describe('the composer', () => {
     expect(input.value).toBe('');
   });
 
+  it('takes focus when a tab is clicked, but not on a touch screen', () => {
+    const tab = '[data-action="activate-tab"][data-id="marco"]';
+    const mouse = mount({ reducedMotion: true, finePointer: true });
+    click(mouse.$(tab));
+    expect(document.activeElement).toBe(mouse.input);
+
+    const touch = mount({ reducedMotion: true });
+    click(touch.$(tab));
+    expect(touch.$('[data-tab="marco"]').getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).not.toBe(touch.input);
+  });
+
   it('cancels an edit on Escape', () => {
     const { $, input } = mount({ reducedMotion: true });
     $('[data-own-bubble]').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
@@ -479,20 +524,31 @@ describe('the composer', () => {
 });
 
 describe('the ambient stream', () => {
-  // A roll of 0.6 makes every event a background message: Priya's.
+  // At a roll of 0.6, events come 9.2 s apart, and the story's second line is Jonas's.
   beforeEach(() => vi.spyOn(Math, 'random').mockReturnValue(0.6));
 
   it('brings background messages while the visitor is online', () => {
-    const { priyaUnread } = mount({ reducedMotion: true });
-    vi.advanceTimersByTime(13_000);
-    expect(priyaUnread()).not.toBeNull();
+    const { jonasUnread } = mount({ reducedMotion: true });
+    vi.advanceTimersByTime(20_000);
+    expect(jonasUnread()).not.toBeNull();
+  });
+
+  it('pauses while the visitor drafts a message, not merely while the input has focus', () => {
+    const { input, jonasUnread } = mount({ reducedMotion: true });
+    input.focus();
+    type(input, 'hel');
+    vi.advanceTimersByTime(60_000);
+    expect(jonasUnread()).toBeNull();
+    type(input, '');
+    vi.advanceTimersByTime(20_000);
+    expect(jonasUnread()).not.toBeNull();
   });
 
   it('pauses while the visitor is offline', () => {
-    const { $, priyaUnread } = mount({ reducedMotion: true });
+    const { $, jonasUnread } = mount({ reducedMotion: true });
     $('[data-action="status-menu"]').click();
     $('[data-action="set-presence"][data-presence="offline"]').click();
     vi.advanceTimersByTime(60_000);
-    expect(priyaUnread()).toBeNull();
+    expect(jonasUnread()).toBeNull();
   });
 });

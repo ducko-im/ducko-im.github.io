@@ -34,7 +34,7 @@ describe('createIntro', () => {
     intro.start();
     vi.runAllTimers();
     expectBuiltUp(store.getState(), target);
-    expect(onDone).toHaveBeenCalledOnce();
+    expect(onDone).toHaveBeenCalledExactlyOnceWith(true);
   });
 
   it('jumps to the full hero when skipped midway, leaving nothing scheduled', () => {
@@ -43,7 +43,7 @@ describe('createIntro', () => {
     vi.advanceTimersByTime(2500);
     intro.skip();
     expectBuiltUp(store.getState(), target);
-    expect(onDone).toHaveBeenCalledOnce();
+    expect(onDone).toHaveBeenCalledExactlyOnceWith(false);
     expect(vi.getTimerCount()).toBe(0);
   });
 });
