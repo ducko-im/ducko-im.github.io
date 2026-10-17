@@ -270,13 +270,18 @@ export function startHero(hero: HTMLElement) {
     if (id !== null) engine.send(id, input.value);
   }
 
+  function openChat(id: string) {
+    engine.openChat(id);
+    focusComposer();
+  }
+
   function handleAction(target: HTMLElement, event: MouseEvent) {
     const { action, id = '' } = target.dataset;
     const state = store.getState();
     switch (action) {
       case 'select-row':
         // A double-click opens the chat, as does Return or Space on a focused row (a click of detail 0). A tap opens it at once.
-        if (event.detail !== 1 || lastPointerType === 'touch') return engine.openChat(id);
+        if (event.detail !== 1 || lastPointerType === 'touch') return openChat(id);
         // Command-click deselects the selected row, as in Ducko's table, which allows an empty selection.
         return engine.selectRow(event.metaKey && state.selectedRowId === id ? null : id);
       case 'toggle-group':
@@ -413,7 +418,7 @@ export function startHero(hero: HTMLElement) {
       const selected = store.getState().selectedRowId;
       if (onRow && selected) focusControl(regions.get('contacts-list')!, 'select-row', selected);
     } else if (event.key === 'Enter' && !onRow && selectedRowId) {
-      engine.openChat(selectedRowId);
+      openChat(selectedRowId);
     } else {
       return;
     }
