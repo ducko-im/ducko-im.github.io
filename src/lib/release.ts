@@ -44,10 +44,27 @@ export function toRelease(item: AppcastItem): Release {
   };
 }
 
-export async function getLatestRelease(): Promise<Release> {
+const EXPECTED_VERSION_ATTEMPTS = 40;
+const EXPECTED_VERSION_DELAY_MS = 15_000;
+
+async function fetchAppcast(): Promise<string> {
   const response = await fetch(site.appcastUrl).catch((cause: unknown) => {
     throw new Error(`Fetching the appcast failed (${site.appcastUrl})`, { cause });
   });
   if (!response.ok) throw new Error(`Fetching the appcast failed: ${response.status} ${response.statusText} (${site.appcastUrl})`);
-  return toRelease(parseAppcast(await response.text()));
+  return response.text();
+}
+
+// Ducko's release workflow passes the version it just published as DUCKO_VERSION.
+// raw.githubusercontent.com caches the appcast for up to five minutes, so wait until it lists that version.
+export async function getLatestRelease(): Promise<Release> {
+  const expectedVersion = process.env.DUCKO_VERSION;
+  for (let attempt = 1; ; attempt++) {
+    const release = toRelease(parseAppcast(await fetchAppcast()));
+    if (!expectedVersion || release.version === expectedVersion) return release;
+    if (attempt === EXPECTED_VERSION_ATTEMPTS) {
+      throw new Error(`The appcast still lists ${release.version} instead of ${expectedVersion} (${site.appcastUrl})`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, EXPECTED_VERSION_DELAY_MS));
+  }
 }

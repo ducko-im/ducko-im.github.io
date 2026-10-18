@@ -41,6 +41,6 @@ agent-browser screenshot public/og.png
 
 ## Deployment
 
-The GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and deploys on every push to `main`, daily, and on manual dispatch. Pull requests run lint, format, type check and tests only. In the repository's Pages settings, the source must be "GitHub Actions", the custom domain `ducko.im`, and Enforce HTTPS on.
+The GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and deploys on every push to `main`, on each Ducko release, daily as a fallback, and on manual dispatch. Ducko's release workflow starts the manual dispatch with the version it published, using the `SITE_DISPATCH_TOKEN` secret in ducko-im/ducko: a fine-grained token with Actions write on this repository. Pull requests run lint, format, type check and tests only. In the repository's Pages settings, the source must be "GitHub Actions", the custom domain `ducko.im`, and Enforce HTTPS on.
 
 `ducko.im`'s DNS is at Cloudflare. The apex and `www` are DNS-only CNAMEs to `ducko-im.github.io`, so GitHub Pages can issue the site's certificate itself.

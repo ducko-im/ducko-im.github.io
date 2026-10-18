@@ -4,10 +4,16 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Daily, to pick up new Ducko releases from the appcast.
+  # Daily, as a fallback for picking up new Ducko releases from the appcast.
   schedule:
     - cron: '17 4 * * *'
+  # Also run by Ducko's release workflow with the version it published.
   workflow_dispatch:
+    inputs:
+      version:
+        description: Ducko version the appcast must list before the build reads it
+        type: string
+        required: false
 
 jobs:
   checks:
@@ -41,6 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      DUCKO_VERSION: ${{ inputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

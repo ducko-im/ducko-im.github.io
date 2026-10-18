@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatSystemVersion, getLatestRelease, parseAppcast, toRelease } from './release';
 
 const appcast = readFileSync(new URL('./__fixtures__/appcast.xml', import.meta.url), 'utf8');
@@ -47,6 +47,41 @@ describe('getLatestRelease', () => {
   it('reads the release from a good response', async () => {
     vi.stubGlobal('fetch', () => Promise.resolve(new Response(appcast)));
     await expect(getLatestRelease()).resolves.toMatchObject({ version: '0.8.0' });
+  });
+});
+
+describe('getLatestRelease with DUCKO_VERSION', () => {
+  const newer = appcast.replace(
+    '<sparkle:shortVersionString>0.8.0</sparkle:shortVersionString>',
+    '<sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>',
+  );
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubEnv('DUCKO_VERSION', '0.9.0');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('waits until the appcast lists the expected version', async () => {
+    const fetch = vi.fn(() => Promise.resolve(new Response(fetch.mock.calls.length < 3 ? appcast : newer)));
+    vi.stubGlobal('fetch', fetch);
+    const release = getLatestRelease();
+    await vi.runAllTimersAsync();
+    await expect(release).resolves.toMatchObject({ version: '0.9.0' });
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('fails when the appcast never lists the expected version', async () => {
+    vi.stubGlobal('fetch', () => Promise.resolve(new Response(appcast)));
+    const release = getLatestRelease();
+    const failure = expect(release).rejects.toThrow('still lists 0.8.0 instead of 0.9.0');
+    await vi.runAllTimersAsync();
+    await failure;
   });
 });
 
