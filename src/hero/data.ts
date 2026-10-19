@@ -42,9 +42,9 @@ const CONTACTS = [
 ];
 
 const PARTICIPANTS: Participant[] = [
-  { nickname: 'Amara', color: { light: '#e32f00', dark: '#ff7166' } },
-  { nickname: 'Kai', color: { light: '#8752ff', dark: '#a78bff' } },
-  { nickname: 'Mateo', color: { light: '#e000a2', dark: '#ff63c3' } },
+  { nickname: 'Amara', color: { light: '#a23fff', dark: '#b984ff' } },
+  { nickname: 'Kai', color: { light: '#907400', dark: '#be9a00' } },
+  { nickname: 'Mateo', color: { light: '#007cc4', dark: '#1ca4ff' } },
 ];
 
 const ROOMS = [{ id: 'pond-club', name: 'Pond Club', subject: 'Peas, not bread 🫛', participants: PARTICIPANTS }] as const satisfies readonly Room[];

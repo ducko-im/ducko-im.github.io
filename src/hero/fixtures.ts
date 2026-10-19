@@ -73,13 +73,12 @@ const DEFAULTS: Required<Omit<ContentState, 'key'>> = {
 
 /**
  * Ducko's `Color.forNickname` for the content's room occupants (XEP-0392 hue, HSLuv saturation 100, lightness 50 in
- * light and 65 in dark), computed once by running Ducko's `ConsistentColorHue` and `HSLuvColor`. Ducko's HSLuv
- * conversion yields no chroma, so every nick comes out gray, as the captures show.
+ * light and 65 in dark), computed once by running Ducko's `ConsistentColorHue` and `HSLuvColor`.
  */
 const OCCUPANT_COLORS: Record<string, Participant['color']> = {
-  Lena: { light: '#777777', dark: '#9e9e9e' },
-  Marco: { light: '#777777', dark: '#9e9e9e' },
-  Priya: { light: '#777777', dark: '#9e9e9e' },
+  Lena: { light: '#b22bff', dark: '#c47fff' },
+  Marco: { light: '#827900', dark: '#aba100' },
+  Priya: { light: '#887700', dark: '#b39e00' },
 };
 
 function resolve<T>(value: T | undefined, reference: string): T {

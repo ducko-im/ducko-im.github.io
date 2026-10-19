@@ -43,7 +43,7 @@ pnpm test           # vitest run
 
 The window colors and shadows are CSS custom properties in `global.css` (`--mac-*`), exposed to Tailwind through `@theme inline` (`bg-window`, `text-secondary-label`, `bg-bubble-out`, …). The text sizes are theme tokens of their own (`--text-mac-*`, used as `text-mac-body` and so on). Dark follows `prefers-color-scheme`; a `data-appearance="light|dark"` attribute on an ancestor overrides it, for both the tokens and the `dark:` variant. The lab and the OG card use it to force an appearance.
 
-Room participant colors in `data.ts` are the ones Ducko's `Color.forNickname` intends: the XEP-0392 hue from the last two bytes of the nickname's SHA-1 (big-endian), as HSLuv with saturation 100 and lightness 50 in light, 65 in dark. Recompute them that way when a nickname changes rather than picking them by eye.
+Room participant colors in `data.ts` are the ones Ducko's `Color.forNickname` intends: the XEP-0392 hue from the first two bytes of the nickname's SHA-1 (little-endian), as HSLuv with saturation 100 and lightness 50 in light, 65 in dark. Recompute them that way when a nickname changes rather than picking them by eye.
 
 The brand around the windows is the pond: a Tailwind sky gradient matched to the icon, white type, and amber for the primary action. Use Tailwind's sky and amber tokens rather than hex approximations. Light pages such as the Impressum show the pond as a header band instead of coloring their text blue.
 

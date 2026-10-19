@@ -140,7 +140,7 @@ function renderBubble(state: HeroState, conversation: Conversation, row: Timelin
   const participant =
     conversation.kind === 'room' && !outgoing ? state.rooms[conversation.id].participants.find((p) => p.nickname === message.sender) : undefined;
   const nickname = participant
-    ? `<span class="${tw`pl-1 text-mac-caption font-semibold text-(--nick-light) dark:text-(--nick-dark)`}" style="${nicknameStyle(participant)}">${escapeHtml(participant.nickname)}</span>`
+    ? `<span class="${tw`pl-1 text-mac-caption leading-[13px] font-semibold text-(--nick-light) dark:text-(--nick-dark)`}" style="${nicknameStyle(participant)}">${escapeHtml(participant.nickname)}</span>`
     : '';
   const forced = state.forcedHover?.kind === 'bubble' && state.forcedHover.id === message.id;
   const bubbleColors = outgoing ? tw`bg-bubble-out text-white` : tw`bg-bubble-in text-bubble-in-text`;
