@@ -226,7 +226,7 @@ describe('renderChatHeader', () => {
   });
 
   it('adds the offline strip while offline', () => {
-    expect(renderChatHeader(state((s) => (s.ownPresence = 'offline')))).toContain("You're offline — messages will send when you reconnect.");
+    expect(renderChatHeader(state((s) => (s.ownPresence = 'offline')))).toContain("You're offline. Messages can't be sent until you're connected.");
     expect(renderChatHeader(state())).not.toContain("You're offline");
   });
 });

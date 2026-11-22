@@ -65,7 +65,7 @@ export function renderChatHeader(state: HeroState): string {
     : '';
   const strip =
     state.ownPresence === 'offline'
-      ? `<div data-offline-strip class="${tw`bg-mac-orange/12 px-4 py-1 text-mac-caption text-secondary-label`}">You're offline — messages will send when you reconnect.</div>`
+      ? `<div data-offline-strip class="${tw`bg-mac-orange/12 px-4 py-1 text-mac-caption text-secondary-label`}">You're offline. Messages can't be sent until you're connected.</div>`
       : '';
   return `<div class="${tw`flex items-center gap-2 px-4 py-2`}">
     ${identity}
