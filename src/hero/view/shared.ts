@@ -23,19 +23,17 @@ export function presenceDot(presence: Presence): string {
   return `<span class="${tw`size-2 shrink-0 rounded-full`} ${DOT_CLASSES[presence]}" data-presence="${presence}"></span>`;
 }
 
-const unknownPresenceRing = `<span class="${tw`-mx-px size-2.5 shrink-0 rounded-full inset-ring-[1.5px] inset-ring-presence-offline`}" data-presence="unknown"></span>`;
-
 /**
  * A contact's presence as the chat window shows it: the dot in its header and tabs, and the header's status line. While
- * the visitor is offline, Ducko knows no contact's presence and draws a hollow ring instead.
+ * the visitor is offline, the contact reads offline, as in the roster.
  */
 export function chatPresence(state: HeroState, contactId: string): { dot: string; status: string } {
-  const { presence, status } = state.contacts[contactId];
-  if (state.ownPresence === 'offline') return { dot: unknownPresenceRing, status: 'Presence unknown' };
-  return { dot: presenceDot(presence), status: presence === 'offline' ? PRESENCE_LABELS.offline : (status ?? PRESENCE_LABELS[presence]) };
+  const presence = displayedPresence(state, contactId);
+  const status = presence === 'offline' ? PRESENCE_LABELS.offline : (state.contacts[contactId].status ?? PRESENCE_LABELS[presence]);
+  return { dot: presenceDot(presence), status };
 }
 
-/** The presence the roster shows: everyone reads offline while the visitor is offline. */
+/** The presence the roster and the chat window show: everyone reads offline while the visitor is offline. */
 export function displayedPresence(state: HeroState, contactId: string): Presence {
   return state.ownPresence === 'offline' ? 'offline' : state.contacts[contactId].presence;
 }

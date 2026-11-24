@@ -211,13 +211,14 @@ describe('renderChatHeader', () => {
     expect(dom(renderTabs(away)).querySelector('[data-tab="lena"] [data-presence="away"]')).not.toBeNull();
   });
 
-  it('draws the unknown-presence ring in the header and the tab while offline', () => {
+  it('shows the contact offline in the header and the tab while the visitor is offline', () => {
     const offline = state((s) => (s.ownPresence = 'offline'));
     const header = dom(renderChatHeader(offline));
-    expect(header.querySelector('[data-presence="unknown"]')).not.toBeNull();
-    expect(header.body.textContent).toContain('Presence unknown');
-    expect(dom(renderTabs(offline)).querySelector('[data-tab="lena"] [data-presence="unknown"]')).not.toBeNull();
-    expect(dom(renderChatHeader(state())).querySelector('[data-presence="unknown"]')).toBeNull();
+    expect(header.querySelector('[data-presence="offline"]')).not.toBeNull();
+    expect(header.body.textContent).toContain('Offline');
+    expect(header.body.textContent).not.toContain('Feeding the ducks');
+    expect(dom(renderTabs(offline)).querySelector('[data-tab="lena"] [data-presence="offline"]')).not.toBeNull();
+    expect(dom(renderChatHeader(state())).querySelector('[data-presence="offline"]')).toBeNull();
   });
 
   it('shows a room’s subject under its header', () => {
